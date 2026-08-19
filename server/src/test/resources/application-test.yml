@@ -1,0 +1,26 @@
+# Isolated in-memory database for the test suite. Demo data stays off so each test
+# controls its own fixtures. The schema is still built by the production Flyway
+# migrations, so the tests verify those migrations too.
+spring:
+  datasource:
+    url: jdbc:h2:mem:meshconnect-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+app:
+  demo-data:
+    enabled: false
+  jwt:
+    secret: dGVzdC1vbmx5LXNlY3JldC1rZXktZm9yLXRoZS1hdXRvbWF0ZWQtdGVzdC1zdWl0ZS0xMjM0NTY3OA==
+    expiration-minutes: 60
+  cors:
+    allowed-origins: http://localhost:5173
+
+logging:
+  level:
+    org.springframework.web: warn
+    org.hibernate: warn

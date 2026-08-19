@@ -1,0 +1,20 @@
+# Zero-setup profile: in-memory H2, schema built by the same Flyway migrations
+# used in production, then populated with a realistic demo dataset on startup.
+spring:
+  datasource:
+    url: jdbc:h2:mem:meshconnect;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+app:
+  demo-data:
+    enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: warn

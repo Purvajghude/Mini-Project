@@ -1,0 +1,26 @@
+# Optional. The default `dev` profile uses an embedded H2 database and needs nothing
+# running here — this is only for exercising the PostgreSQL (`prod`) profile locally.
+#
+#   docker compose up -d
+#   SPRING_PROFILES_ACTIVE=prod DB_USER=mesh DB_PASSWORD=mesh_dev_password \
+#     JWT_SECRET=$(openssl rand -base64 48) ./mvnw spring-boot:run
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mesh-postgres
+    environment:
+      POSTGRES_DB: mesh_connect
+      POSTGRES_USER: mesh
+      POSTGRES_PASSWORD: mesh_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - mesh-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mesh -d mesh_connect"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mesh-postgres-data:

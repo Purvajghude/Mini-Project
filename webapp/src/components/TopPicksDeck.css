@@ -1,0 +1,124 @@
+/* Top picks deck. Uses the application's light palette rather than the component
+   library's dark defaults, so the deck reads as part of the product. */
+
+.top-picks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 40px;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.top-picks-copy h2 { margin: 0 0 10px; font-size: 28px; letter-spacing: -0.03em; }
+.top-picks-copy > p { margin: 0; max-width: 420px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+/* Names the same people the deck holds, so the ranking is readable without
+   dragging anything - the deck is a nicety, not the only way through. */
+.top-picks-legend { display: grid; gap: 2px; margin: 20px 0 0; padding: 0; list-style: none; }
+.top-picks-legend li { display: flex; align-items: center; gap: 10px; padding: 5px 0; color: var(--ink); font-size: 13px; }
+.top-picks-legend li span { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 5px; background: var(--surface-muted); color: var(--muted); font-size: 10px; font-weight: 700; }
+.top-picks-legend li em { margin-left: auto; color: var(--muted); font-size: 12px; font-style: normal; font-variant-numeric: tabular-nums; }
+
+.top-picks-stage { width: 320px; height: 340px; justify-self: end; }
+
+/* The library sets a 1rem radius on .card; the design system caps containers at 12px. */
+.top-picks-stage .card {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(23, 23, 25, 0.12);
+}
+
+.pick-card {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  padding: 20px;
+  text-align: left;
+}
+
+.pick-card-top { display: flex; align-items: center; justify-content: space-between; }
+
+.pick-avatar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(23, 23, 25, .1);
+  border-radius: 50%;
+  background: #e5e5e9;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.pick-avatar-blue { background: #dce8ff; color: #1d4c93; }
+.pick-avatar-amber, .pick-avatar-orange { background: #fde2d8; color: #96351f; }
+.pick-avatar-teal, .pick-avatar-green { background: #dcefe6; color: #1f6c50; }
+.pick-avatar-violet { background: #e7e0fb; color: #4c2d8f; }
+.pick-avatar-rose { background: #fbe0e6; color: #93304a; }
+.pick-avatar-moss { background: #e3ecd9; color: #40602a; }
+
+.pick-fit { color: var(--ink); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pick-fit span { color: var(--muted); font-size: 11px; font-weight: 650; }
+
+.pick-card h3 { margin: 16px 0 3px; font-size: 19px; letter-spacing: -0.025em; }
+.pick-course { margin: 0; color: var(--muted); font-size: 13px; }
+.pick-reason { margin: 12px 0 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+
+.pick-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.pick-skill { border: 1px solid var(--line); border-radius: 999px; background: var(--surface-muted); color: var(--ink-soft); padding: 4px 8px; font-size: 11px; font-weight: 620; }
+
+.pick-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; }
+
+.pick-button {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.pick-button-quiet { border-color: var(--line-strong); background: var(--surface); color: var(--ink); }
+.pick-button-quiet:hover { border-color: var(--ink); background: var(--surface-muted); }
+.pick-button-strong { background: var(--ink); color: var(--surface); }
+.pick-button-strong:hover:not(:disabled) { background: var(--ink-soft); }
+.pick-button:disabled { cursor: not-allowed; opacity: .52; }
+.pick-button:focus-visible { outline: 3px solid rgba(37, 89, 167, .38); outline-offset: 3px; }
+
+@media (max-width: 1100px) {
+  .top-picks { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .top-picks-stage { justify-self: start; }
+}
+
+@media (max-width: 640px) {
+  .top-picks-stage { width: 100%; max-width: 320px; height: 350px; }
+  .pick-button { min-height: 44px; }
+}
+
+/* Marks which legend row the deck is currently showing, so the list and the card
+   never disagree about who is selected. */
+.top-picks-legend-active { font-weight: 650; }
+.top-picks-legend-active span { background: var(--ink); color: var(--surface); }
+
+/* Feedback belongs on the press, not the release: waiting for click to acknowledge
+   an action is the difference between an interface that answers and one that lags.
+   Scale rather than colour so it reads instantly against either button style. */
+.pick-button:active:not(:disabled) { transform: scale(0.97); }
+.pick-button { transition: background 180ms cubic-bezier(.2,.8,.2,1), border-color 180ms cubic-bezier(.2,.8,.2,1), transform 100ms ease-out; }
+
+/* The deck is grabbable, and the cursor should say so before anything moves. */
+.top-picks-stage .card-rotate { cursor: grab; }
+.top-picks-stage .card-rotate:active { cursor: grabbing; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pick-button { transition: background 180ms ease, border-color 180ms ease; }
+  .pick-button:active:not(:disabled) { transform: none; }
+}

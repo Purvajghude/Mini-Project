@@ -1,0 +1,17 @@
+# PostgreSQL profile. Every value comes from the environment; there are no
+# credentials in source control.
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mesh_connect}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+
+app:
+  demo-data:
+    enabled: false
+  # No default on purpose: the development key is committed, so a production start
+  # without an explicit secret must fail rather than silently sign tokens with it.
+  jwt:
+    secret: ${JWT_SECRET}

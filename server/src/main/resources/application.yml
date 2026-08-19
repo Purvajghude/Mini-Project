@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: mesh-connect-api
+  # The zero-setup embedded profile is the default so a fresh clone runs with
+  # `./mvnw spring-boot:run` and nothing else. Use `prod` for PostgreSQL.
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: always
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    # Development default only. Supply APP_JWT_SECRET (base64, >= 32 bytes) in production.
+    secret: ${JWT_SECRET:YWxsb3ctbWUtcmVwbGFjZS10aGlzLWluLWRldmVsb3BtZW50LTAxMjM0NTY3ODkwMTIzNDU2Nzg5}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:480}
+  cors:
+    # Vite dev server. The packaged build serves the UI same-origin, so CORS is unused there.
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173,http://127.0.0.1:5173}
+  demo-data:
+    enabled: false

@@ -1,0 +1,137 @@
+/* Team builder. Uses the application's documented tokens throughout; the only colour
+   is the gap state, which is a genuine warning about work nobody can do. */
+
+.team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 32px;
+  align-items: start;
+}
+
+.team-main { min-width: 0; }
+
+.team-picker { min-width: 0; margin: 0 0 22px; padding: 0; border: 0; }
+.team-picker legend { padding: 0; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.team-group { margin-top: 18px; }
+.team-group h3 { margin: 0 0 9px; color: var(--ink); font-size: 13px; font-weight: 650; }
+
+.team-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 620;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(.2,.8,.2,1), border-color 160ms cubic-bezier(.2,.8,.2,1), transform 100ms ease-out;
+}
+
+.team-chip:hover { border-color: var(--line-strong); background: var(--surface-muted); }
+.team-chip:active { transform: scale(.97); }
+.team-chip-on { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+.team-chip-on:hover { border-color: var(--ink); background: var(--ink-soft); }
+.team-chip:focus-visible { outline: 3px solid rgba(37, 89, 167, .38); outline-offset: 3px; }
+
+/* Marks a skill you personally cover, so it is obvious why it will not need staffing. */
+.team-chip-mine { border-radius: 999px; background: var(--surface-muted); color: var(--muted); padding: 1px 6px; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.team-chip-on .team-chip-mine { background: rgba(255, 255, 255, .22); color: var(--surface); }
+
+.team-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.team-controls label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.team-controls select { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 7px 10px; font: inherit; font-size: 13px; }
+.team-count { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.team-reset, .team-build {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 660;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(.2,.8,.2,1), border-color 160ms cubic-bezier(.2,.8,.2,1), transform 100ms ease-out;
+}
+
+.team-reset { margin-left: auto; border-color: var(--line-strong); background: var(--surface); color: var(--ink); }
+.team-reset:hover:not(:disabled) { border-color: var(--ink); background: var(--surface-muted); }
+.team-build { background: var(--ink); color: var(--surface); }
+.team-build:hover:not(:disabled) { background: var(--ink-soft); }
+.team-reset:active:not(:disabled), .team-build:active:not(:disabled) { transform: scale(.98); }
+.team-reset:disabled, .team-build:disabled { cursor: not-allowed; opacity: .5; }
+.team-reset:focus-visible, .team-build:focus-visible { outline: 3px solid rgba(37, 89, 167, .38); outline-offset: 3px; }
+
+.team-error { margin-top: 14px; color: var(--danger); font-size: 13.5px; }
+
+/* --- result panel -------------------------------------------------------- */
+
+.team-result { position: sticky; top: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 20px; }
+
+.team-empty h3 { margin: 0 0 8px; font-size: 15px; }
+.team-empty p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+
+.team-coverage-head { display: flex; align-items: baseline; justify-content: space-between; }
+.team-coverage-head span { color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.team-coverage-head strong { font-size: 21px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.team-coverage-track { position: relative; display: block; height: 6px; margin: 10px 0 8px; border-radius: 999px; background: var(--surface-muted); overflow: hidden; }
+.team-coverage-fill { position: absolute; inset: 0; transform-origin: left center; border-radius: 999px; background: var(--ink); transition: transform 260ms cubic-bezier(.2,.8,.2,1); }
+.team-coverage-note { margin: 0; color: var(--faint); font-size: 12px; }
+
+.team-members { display: grid; gap: 14px; margin: 20px 0 0; padding: 0; list-style: none; }
+.team-members li { border-top: 1px solid var(--line); padding-top: 14px; }
+.team-member-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.team-member-head strong { display: block; font-size: 14px; letter-spacing: -.01em; }
+.team-member-head span:not(.team-avatar) { color: var(--muted); font-size: 12px; }
+.team-member-head em { color: var(--faint); font-size: 11px; font-style: normal; font-weight: 700; }
+
+.team-avatar { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(23, 23, 25, .1); border-radius: 50%; background: var(--tint-neutral, #e5e5e9); color: var(--ink); font-size: 12px; font-weight: 760; }
+.team-avatar-blue, .team-avatar-teal { background: #dce8ff; color: #1d4c93; }
+.team-avatar-amber, .team-avatar-rose { background: #fde2d8; color: #96351f; }
+.team-avatar-moss, .team-avatar-violet { background: #dcefe6; color: #1f6c50; }
+
+.team-member-role { margin: 9px 0 3px; color: var(--ink); font-size: 13px; line-height: 1.45; }
+.team-member-meta { margin: 0; color: var(--muted); font-size: 12px; }
+.team-none { margin: 18px 0 0; color: var(--muted); font-size: 13.5px; }
+
+.team-aside-block { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.team-aside-block > span { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.team-aside-block p { margin: 9px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.team-chips-static { gap: 6px; }
+.team-chip-static { border: 1px solid var(--line); border-radius: 999px; background: var(--surface-muted); color: var(--ink-soft); padding: 4px 9px; font-size: 11.5px; font-weight: 620; }
+/* The one place colour appears here: work nobody in the cohort can do is a real
+   planning problem, not a neutral fact. */
+.team-chip-gap { border-color: #f3c8c2; background: var(--tint-danger-surface, #fee9e7); color: var(--danger); }
+
+@media (max-width: 1100px) {
+  .team-layout { grid-template-columns: minmax(0, 1fr); }
+  .team-result { position: static; }
+}
+
+@media (max-width: 640px) {
+  .team-controls { align-items: stretch; }
+  .team-reset { margin-left: 0; }
+  .team-reset, .team-build { flex: 1; min-height: 44px; }
+  .team-chip { min-height: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-chip, .team-reset, .team-build { transition: background 160ms ease, border-color 160ms ease; }
+  .team-chip:active, .team-reset:active, .team-build:active { transform: none; }
+  .team-coverage-fill { transition: none; }
+}

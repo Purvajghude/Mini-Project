@@ -1,0 +1,301 @@
+/* Landing page — a deliberately separate visual world from the application.
+   The product is a calm light workspace; this page has to stop a stranger, so it
+   commits to a dark ground and lets the animated field and particle title carry it.
+   Scoped under .lp so none of it leaks into the app's design system. */
+
+.lp {
+  --lp-ground: #09090f;
+  --lp-raise: #101019;
+  --lp-line: rgba(255, 255, 255, 0.09);
+  --lp-line-strong: rgba(255, 255, 255, 0.18);
+  --lp-text: #f4f4f6;
+  --lp-muted: #a0a0b0;
+  --lp-faint: #8f8fa0;
+  --lp-accent: #8b5cf6;
+  --lp-accent-soft: #2b2142;
+
+  position: relative;
+  min-width: 320px;
+  overflow-x: clip;
+  background: var(--lp-ground);
+  color: var(--lp-text);
+}
+
+/* The dot field is decorative and must never intercept a click meant for content.
+   Scoped to the hero: a fixed full-viewport layer repaints the whole screen behind
+   every section, which is most of the page's frame cost for none of the effect. */
+.lp-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.lp > section {
+  position: relative;
+  z-index: 1;
+}
+
+.lp-hero > *:not(.lp-field) {
+  position: relative;
+  z-index: 1;
+}
+
+.lp h1, .lp h2, .lp h3 { margin: 0; letter-spacing: -0.035em; line-height: 1.05; text-wrap: balance; }
+.lp p { margin: 0; text-wrap: pretty; }
+
+.lp-eyebrow {
+  color: var(--lp-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.lp-body { color: var(--lp-muted); font-size: 17px; line-height: 1.6; }
+.lp em { font-style: normal; color: var(--lp-text); }
+
+/* --- buttons ------------------------------------------------------------ */
+
+.lp-cta, .lp-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 180ms cubic-bezier(.2,.8,.2,1),
+              border-color 180ms cubic-bezier(.2,.8,.2,1), color 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.lp-cta { background: var(--lp-text); color: #0b0b12; }
+.lp-cta:hover { transform: translateY(-2px); background: #ffffff; }
+.lp-ghost { border-color: var(--lp-line-strong); background: transparent; color: var(--lp-text); }
+.lp-ghost:hover { transform: translateY(-2px); border-color: var(--lp-text); background: rgba(255, 255, 255, 0.06); }
+.lp-cta-lg, .lp-ghost-lg { min-height: 52px; padding: 15px 26px; font-size: 16px; }
+
+.lp button:focus-visible, .lp a:focus-visible {
+  outline: 3px solid var(--lp-accent);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* --- nav ---------------------------------------------------------------- */
+
+.lp-nav {
+  display: flex;
+  width: min(1200px, calc(100% - 48px));
+  align-items: center;
+  gap: 32px;
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.lp-mark {
+  display: inline-flex;
+  align-items: center;
+  /* Full touch target: this is the only way back to the top on narrow screens. */
+  min-height: 44px;
+  gap: 10px;
+  color: var(--lp-text);
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.lp-mark-badge {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--lp-text);
+  color: #0b0b12;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.lp-nav-links { display: flex; gap: 26px; margin-left: 12px; }
+.lp-nav-links a { color: var(--lp-muted); font-size: 14.5px; font-weight: 550; text-decoration: none; transition: color 160ms; }
+.lp-nav-links a:hover { color: var(--lp-text); }
+.lp-nav-actions { display: flex; gap: 12px; margin-left: auto; }
+
+/* The bubble menu is the compact-width navigation; the inline links take over
+   once there is room for them. */
+.lp-bubble { display: none; margin-left: auto; }
+
+/* --- hero --------------------------------------------------------------- */
+
+.lp-hero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 56px 0 92px;
+  text-align: center;
+}
+
+.lp-title { width: 100%; height: clamp(150px, 26vw, 300px); }
+
+.lp-lede {
+  max-width: 620px;
+  margin-top: 18px;
+  color: var(--lp-muted);
+  font-size: clamp(17px, 2.2vw, 21px);
+  line-height: 1.5;
+}
+
+.lp-hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 34px; }
+.lp-hero-note { margin-top: 26px; color: var(--lp-faint); font-size: 13.5px; }
+
+/* --- skills ------------------------------------------------------------- */
+
+.lp-skills {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: center;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 104px 0;
+}
+
+.lp-skills h2 { margin: 14px 0 16px; font-size: clamp(30px, 4vw, 48px); }
+.lp-skills-copy .lp-body { max-width: 460px; }
+
+.lp-complement {
+  margin-top: 30px;
+  border: 1px solid var(--lp-line);
+  border-radius: 14px;
+  background: var(--lp-raise);
+  padding: 20px 22px;
+}
+
+.lp-complement-pair { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.lp-plus { color: var(--lp-faint); font-weight: 400; }
+.lp-needs { color: var(--lp-accent); }
+.lp-complement p { margin-top: 10px; color: var(--lp-muted); font-size: 14.5px; line-height: 1.55; }
+
+.lp-wheel { height: 460px; }
+
+/* --- how it works ------------------------------------------------------- */
+
+.lp-how {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 96px 0;
+  border-top: 1px solid var(--lp-line);
+}
+
+.lp-how h2 { margin: 14px 0 48px; font-size: clamp(30px, 4vw, 48px); }
+
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 44px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.lp-steps li { border-top: 1px solid var(--lp-line-strong); padding-top: 22px; }
+.lp-step-n { display: block; margin-bottom: 14px; color: var(--lp-accent); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; }
+.lp-steps h3 { margin-bottom: 10px; font-size: 21px; }
+.lp-steps p { color: var(--lp-muted); font-size: 15px; line-height: 1.6; }
+
+/* --- engine ------------------------------------------------------------- */
+
+.lp-engine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+  gap: 72px;
+  align-items: center;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 96px 0;
+  border-top: 1px solid var(--lp-line);
+}
+
+.lp-engine h2 { margin: 14px 0 18px; font-size: clamp(30px, 4vw, 48px); }
+.lp-engine-copy .lp-body { max-width: 520px; }
+
+.lp-engine-card { border: 1px solid var(--lp-line); border-radius: 16px; background: var(--lp-raise); padding: 24px; }
+.lp-engine-head { display: flex; align-items: center; justify-content: space-between; color: var(--lp-faint); font-size: 12px; font-weight: 650; }
+.lp-engine-head strong { color: var(--lp-accent); font-size: 14px; }
+.lp-engine-person { display: flex; align-items: center; gap: 14px; margin: 24px 0 18px; }
+.lp-engine-avatar { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 50%; background: var(--lp-accent-soft); color: #c4b5fd; font-size: 16px; font-weight: 750; }
+.lp-engine-person strong { display: block; font-size: 17px; letter-spacing: -0.02em; }
+.lp-engine-person span { color: var(--lp-muted); font-size: 13.5px; }
+.lp-engine-reason { border-left: 1px solid var(--lp-accent); padding-left: 14px; color: var(--lp-muted); font-size: 14.5px; line-height: 1.55; }
+.lp-engine-bars { display: grid; gap: 11px; margin: 24px 0 0; }
+.lp-engine-bars > div { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 12px; align-items: center; }
+.lp-engine-bars dt { color: var(--lp-muted); font-size: 13px; }
+.lp-engine-bars dd { display: flex; align-items: center; gap: 9px; margin: 0; }
+.lp-bar { position: relative; flex: 1; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.09); overflow: hidden; }
+.lp-bar-fill { position: absolute; inset: 0; transform-origin: left center; border-radius: 999px; background: var(--lp-accent); }
+.lp-engine-bars dd em { min-width: 22px; color: var(--lp-faint); font-size: 12px; font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* --- final + footer ----------------------------------------------------- */
+
+.lp-final {
+  display: grid;
+  justify-items: center;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 104px 0;
+  border-top: 1px solid var(--lp-line);
+  text-align: center;
+}
+
+.lp-final h2 { font-size: clamp(32px, 5vw, 60px); }
+.lp-final .lp-body { margin: 16px 0 32px; }
+
+.lp-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 30px 0 44px;
+  border-top: 1px solid var(--lp-line);
+  color: var(--lp-faint);
+  font-size: 13px;
+}
+
+/* --- responsive --------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  .lp-nav-links, .lp-nav-actions { display: none; }
+  .lp-bubble { display: block; }
+  .lp-skills, .lp-engine { grid-template-columns: minmax(0, 1fr); gap: 44px; }
+  .lp-wheel { height: 380px; }
+  .lp-steps { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+}
+
+@media (max-width: 640px) {
+  .lp-nav, .lp-hero, .lp-skills, .lp-how, .lp-engine, .lp-final, .lp-footer { width: calc(100% - 32px); }
+  .lp-hero { padding: 34px 0 68px; }
+  .lp-skills, .lp-how, .lp-engine, .lp-final { padding: 68px 0; }
+  .lp-hero-actions { width: 100%; flex-direction: column; }
+  .lp-hero-actions button { width: 100%; }
+  .lp-wheel { height: 320px; }
+  .lp-engine-bars > div { grid-template-columns: minmax(0, 1fr) 92px; }
+}
+
+/* Content and every action stay present without motion; only the movement stops. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-cta, .lp-ghost { transition: none; }
+  .lp-cta:hover, .lp-ghost:hover { transform: none; }
+  .lp-field { display: none; }
+}

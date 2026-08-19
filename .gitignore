@@ -1,0 +1,79 @@
+# Secrets / environment
+.env
+*.env.local
+
+# Android release signing (NEVER commit — losing these means losing the
+# ability to update the Play Store listing; back them up privately)
+android/key.properties
+*.jks
+*.keystore
+
+# Local embedding-backfill venv
+backend/.embed_venv/
+
+# Machine-specific tooling config (absolute paths)
+.claude/
+
+# Python (AI service)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Local Java toolchain download (Maven distribution fetched for this machine).
+# The committed Maven Wrapper replaces this; only a JDK is a real prerequisite.
+.tooling/
+
+# Java build output
+server/target/
+
+# Web client build + toolchain. `node/` is fetched by frontend-maven-plugin.
+webapp/node_modules/
+webapp/node/
+webapp/dist/
