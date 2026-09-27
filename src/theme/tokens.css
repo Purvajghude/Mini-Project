@@ -1,0 +1,146 @@
+/* ==========================================================================
+   MATERIAL DESIGN 3 (M3) DESIGN SYSTEM TOKENS FOR MESH
+   Authentic Figma M3 Designlab Color Roles & Expressive Foundations
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Primary Tonal Palette (M3 Designlab - Iris Purple P-40 / P-90 / P-10) */
+  --md-sys-color-primary: #6750A4;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #EADDFF;
+  --md-sys-color-on-primary-container: #21005D;
+  --md-sys-color-primary-fixed: #EADDFF;
+  --md-sys-color-on-primary-fixed: #21005D;
+
+  /* Secondary Tonal Palette (M3 Designlab - Slate Lavender S-40 / S-90 / S-10) */
+  --md-sys-color-secondary: #625B71;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #E8DEF8;
+  --md-sys-color-on-secondary-container: #1D192B;
+  --md-sys-color-secondary-fixed: #E8DEF8;
+  --md-sys-color-on-secondary-fixed: #1D192B;
+
+  /* Tertiary Tonal Palette (M3 Designlab - Rose Mauve / Blossom Pink T-40 / T-90 / T-10) */
+  --md-sys-color-tertiary: #7D5260;
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #FFD8E4;
+  --md-sys-color-on-tertiary-container: #31111D;
+  --md-sys-color-tertiary-fixed: #FFD8E4;
+  --md-sys-color-on-tertiary-fixed: #31111D;
+
+  /* Error Tonal Palette */
+  --md-sys-color-error: #BA1A1A;
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-error-container: #FFDAD6;
+  --md-sys-color-on-error-container: #410002;
+
+  /* Surface & Background (Light Scheme M3 Designlab) */
+  --md-sys-color-surface: #FEF7FF;
+  --md-sys-color-on-surface: #1D1B20;
+  --md-sys-color-surface-variant: #E7E0EC;
+  --md-sys-color-on-surface-variant: #49454F;
+  --md-sys-color-surface-tint: #6750A4;
+  --md-sys-color-background: #FEF7FF;
+  --md-sys-color-on-background: #1D1B20;
+
+  /* M3 Surface Container Roles (Tonal Elevation) */
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #F7F2FA;
+  --md-sys-color-surface-container: #F3EDF7;
+  --md-sys-color-surface-container-high: #ECE6F0;
+  --md-sys-color-surface-container-highest: #E6E0E9;
+
+  /* Outline Roles */
+  --md-sys-color-outline: #79747E;
+  --md-sys-color-outline-variant: #CAC4D0;
+
+  /* Inverse Roles */
+  --md-sys-color-inverse-surface: #322F35;
+  --md-sys-color-inverse-on-surface: #F5EFF7;
+  --md-sys-color-inverse-primary: #D0BCFF;
+
+  /* Scrim and Shadow */
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-shadow: rgba(29, 27, 32, 0.08);
+
+  /* Discovery Rating Action Tokens */
+  --action-nope-container: #FFD8E4;
+  --action-nope-on-container: #BA1A1A;
+  --action-maybe-container: #FFF0D4;
+  --action-maybe-on-container: #7A5900;
+  --action-yoppo-container: #D4F8D3;
+  --action-yoppo-on-container: #0B6B2B;
+
+  /* Synergy & Status Accents */
+  --md-custom-color-synergy: #0B6B2B;
+  --md-custom-color-synergy-container: #D4F8D3;
+  --md-custom-color-on-synergy-container: #002207;
+
+  --md-custom-color-warning: #7A5900;
+  --md-custom-color-warning-container: #FFF0D4;
+  --md-custom-color-on-warning-container: #261900;
+
+  /* Shape Scale Tokens */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-xl: 24px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* Elevation Tokens (Subtle tonal borders + soft ambient tint) */
+  --md-sys-elevation-level-0: none;
+  --md-sys-elevation-level-1: 0px 1px 3px 0px rgba(0, 0, 0, 0.06), 0px 1px 2px 0px rgba(0, 0, 0, 0.04);
+  --md-sys-elevation-level-2: 0px 2px 6px 1px rgba(0, 0, 0, 0.06), 0px 1px 2px 0px rgba(0, 0, 0, 0.04);
+  --md-sys-elevation-level-3: 0px 4px 10px 2px rgba(0, 0, 0, 0.08), 0px 2px 4px 0px rgba(0, 0, 0, 0.05);
+  --md-sys-elevation-level-4: 0px 6px 14px 3px rgba(0, 0, 0, 0.08), 0px 3px 6px 0px rgba(0, 0, 0, 0.06);
+  --md-sys-elevation-level-5: 0px 8px 18px 4px rgba(0, 0, 0, 0.10), 0px 4px 8px 0px rgba(0, 0, 0, 0.06);
+
+  /* State Layer Opacity Tokens */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.12;
+  --md-sys-state-pressed-opacity: 0.14;
+  --md-sys-state-dragged-opacity: 0.16;
+
+  /* Typography Scale (Material 3 with Roboto Flex & Inter fallback) */
+  --md-ref-typeface-brand: 'Roboto Flex', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'Roboto Flex', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Display */
+  --md-sys-typescale-display-large: 700 57px/64px var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-medium: 650 45px/52px var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-small: 600 36px/44px var(--md-ref-typeface-brand);
+
+  /* Headline */
+  --md-sys-typescale-headline-large: 600 32px/40px var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-medium: 600 28px/36px var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-small: 600 24px/32px var(--md-ref-typeface-brand);
+
+  /* Title */
+  --md-sys-typescale-title-large: 600 22px/28px var(--md-ref-typeface-brand);
+  --md-sys-typescale-title-medium: 550 16px/24px var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-small: 550 14px/20px var(--md-ref-typeface-plain);
+
+  /* Body */
+  --md-sys-typescale-body-large: 400 16px/24px var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-medium: 400 14px/20px var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-small: 400 12px/16px var(--md-ref-typeface-plain);
+
+  /* Label */
+  --md-sys-typescale-label-large: 550 14px/20px var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-medium: 550 12px/16px var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-small: 550 11px/16px var(--md-ref-typeface-plain);
+
+  /* Standard Motion */
+  --md-sys-motion-standard: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-emphasized: 300ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout Breakpoints */
+  --md-layout-compact-max: 600px;
+  --md-layout-medium-max: 840px;
+  --md-layout-expanded-min: 841px;
+}
