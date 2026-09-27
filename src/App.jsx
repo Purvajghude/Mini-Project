@@ -20,6 +20,15 @@ import {
 import { api, ApiError } from './api.js';
 import Landing from './pages/Landing.jsx';
 import TeamBuilder from './components/TeamBuilder.jsx';
+import { auth as fbAuth, googleProvider } from './firebase.js';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut as fbSignOut,
+  updateProfile,
+} from 'firebase/auth';
 import {
   activity,
   conversations as demoConversations,
@@ -125,6 +134,59 @@ const toProfile = (profile) => ({
   onboardingComplete: profile.onboardingComplete,
 });
 
+function getFriendlyErrorMessage(error) {
+  if (!error) return 'An unexpected error occurred.';
+  const code = error.code || '';
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Invalid email or password. Please check your credentials.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Try signing in instead.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in popup was closed before completing.';
+    case 'auth/popup-blocked':
+      return 'Sign-in popup was blocked by browser. Please allow popups.';
+    case 'auth/too-many-requests':
+      return 'Access temporarily disabled due to many failed attempts. Try again later.';
+    case 'auth/network-request-failed':
+      return 'Network connection issue. Please check your internet connection.';
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is not enabled in Firebase Authentication.';
+    default:
+      if (error instanceof ApiError) return error.message;
+      return error.message || 'Authentication failed. Please try again.';
+  }
+}
+
+const createMeshUserFromFirebase = (fbUser, extra = {}) => {
+  const name = extra.displayName || fbUser.displayName || fbUser.email?.split('@')[0] || 'Mesh Student';
+  const uname = extra.username || fbUser.email?.split('@')[0] || 'mesh.user';
+  return {
+    id: fbUser.uid,
+    username: uname,
+    displayName: name,
+    email: fbUser.email || '',
+    initials: initials(name),
+    course: '',
+    department: '',
+    yearOfStudy: '',
+    avatarKey: 'ink',
+    headline: 'Building meaningful student projects.',
+    bio: '',
+    availability: 'Open to collaborate',
+    accent: 'ink',
+    skills: [],
+    onboardingComplete: false,
+    ...extra,
+  };
+};
+
 const toRecommendation = (candidate) => ({
   id: candidate.userId,
   username: candidate.username,
@@ -165,11 +227,109 @@ const toFeedItem = (post) => ({
   status: post.status,
 });
 
-function AuthPage({ mode, onModeChange, onDemo, onSubmit, busy, error }) {
+function AuthPage({ mode, onModeChange, onDemo, onSubmit, onGoogleSignIn, busy, error }) {
   const [form, setForm] = useState({ displayName: '', username: '', email: '', password: '' });
   const signIn = mode === 'login';
-  const submit = (event) => { event.preventDefault(); onSubmit(form); };
-  return <main className="auth-page"><button className="auth-brand" onClick={() => onModeChange('landing')}><span className="wordmark-mark">M</span> Mesh</button><section className="auth-panel"><div className="auth-copy"><p className="section-label">{signIn ? 'Welcome back' : 'Start with your working profile'}</p><h1>{signIn ? 'Pick up where your next project left off.' : 'Find the skills that move your idea forward.'}</h1><p>{signIn ? 'Sign in to see your collaborators, conversations, and campus help board.' : 'Create an account, add what you can contribute, and see who could complete the team.'}</p></div><form className="auth-form" onSubmit={submit} noValidate>{!signIn ? <><label>Display name<input value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} placeholder="Your name" required /></label><label>Username<input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="e.g. sam.builds" required /></label></> : null}<label>College email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@college.edu" required /></label><label>Password<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder={signIn ? 'Your password' : 'At least 8 characters'} required minLength="8" /></label>{error ? <p className="form-error" role="alert"><Icon name="info" size={17} />{error}</p> : null}<Button type="submit" disabled={busy}>{busy ? 'Please wait...' : signIn ? 'Sign in' : 'Create account'} <Icon name="arrow" size={16} /></Button></form><div className="auth-divider"><span>or</span></div><button className="demo-button" onClick={onDemo}><span className="demo-dot" /> Explore the working demo</button><p className="auth-switch">{signIn ? 'New here?' : 'Already have an account?'} <button onClick={() => onModeChange(signIn ? 'register' : 'login')}>{signIn ? 'Create an account' : 'Sign in'}</button></p></section></main>;
+  const submit = (event) => {
+    event.preventDefault();
+    if (busy) return;
+    onSubmit(form);
+  };
+  return (
+    <main className="auth-page">
+      <button className="auth-brand" onClick={() => onModeChange('landing')}>
+        <span className="wordmark-mark">M</span> Mesh
+      </button>
+      <section className="auth-panel">
+        <div className="auth-copy">
+          <p className="section-label">{signIn ? 'Welcome back' : 'Start with your working profile'}</p>
+          <h1>{signIn ? 'Pick up where your next project left off.' : 'Find the skills that move your idea forward.'}</h1>
+          <p>{signIn ? 'Sign in to see your collaborators, conversations, and campus help board.' : 'Create an account, add what you can contribute, and see who could complete the team.'}</p>
+        </div>
+        <form className="auth-form" onSubmit={submit} noValidate>
+          {!signIn ? (
+            <>
+              <label>
+                Display name
+                <input
+                  value={form.displayName}
+                  onChange={(event) => setForm({ ...form, displayName: event.target.value })}
+                  placeholder="Your name"
+                  disabled={busy}
+                  required
+                />
+              </label>
+              <label>
+                Username
+                <input
+                  value={form.username}
+                  onChange={(event) => setForm({ ...form, username: event.target.value })}
+                  placeholder="e.g. sam.builds"
+                  disabled={busy}
+                  required
+                />
+              </label>
+            </>
+          ) : null}
+          <label>
+            College email
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              placeholder="you@college.edu"
+              disabled={busy}
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder={signIn ? 'Your password' : 'At least 8 characters'}
+              disabled={busy}
+              required
+              minLength="8"
+            />
+          </label>
+          {error ? (
+            <p className="form-error" role="alert">
+              <Icon name="info" size={17} />{error}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Please wait...' : signIn ? 'Sign in' : 'Create account'} <Icon name="arrow" size={16} />
+          </Button>
+        </form>
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+        <button
+          type="button"
+          className="demo-button"
+          onClick={onGoogleSignIn}
+          disabled={busy}
+          style={{ marginBottom: '10px' }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+          </svg>
+          <span>{signIn ? 'Sign in with Google' : 'Sign up with Google'}</span>
+        </button>
+        <button type="button" className="demo-button" onClick={onDemo} disabled={busy}>
+          <span className="demo-dot" /> Explore the working demo
+        </button>
+        <p className="auth-switch">
+          {signIn ? 'New here?' : 'Already have an account?'} <button type="button" onClick={() => onModeChange(signIn ? 'register' : 'login')}>{signIn ? 'Create an account' : 'Sign in'}</button>
+        </p>
+      </section>
+    </main>
+  );
 }
 
 function AppShell({ route, onRoute, user, onSignOut, apiActive, children }) {
@@ -582,7 +742,14 @@ export default function App() {
     try { return JSON.parse(sessionStorage.getItem('mesh-auth') || 'null'); } catch { return null; }
   });
   const [route, setRoute] = useState(() => auth ? 'discover' : 'landing');
-  const [user, setUser] = useState(clone(demoUser));
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('mesh-user');
+      return stored ? JSON.parse(stored) : clone(demoUser);
+    } catch {
+      return clone(demoUser);
+    }
+  });
   const [recommendations, setRecommendations] = useState(clone(demoRecommendations));
   const [matches, setMatches] = useState(clone(demoMatches));
   const [requests, setRequests] = useState(clone(demoRequests));
@@ -601,22 +768,23 @@ export default function App() {
   const demoMode = !auth || auth.demo || !api.enabled;
   const toast = (message, type = 'success') => {
     setNotice({ message, type });
-    // Held so a second toast cancels the first one's timer; otherwise the earlier
-    // timeout fires mid-way through the newer message and cuts it short.
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setNotice(null), 4200);
   };
-  const navigate = (next) => { setRoute(next); window.scrollTo({ top: 0, behavior: 'instant' }); };
+  const navigate = (next) => {
+    setRoute(next);
+    setAuthError('');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
   const hydrate = async (token) => {
-    // Clear the offline sample data first. Without this the real workspace renders
-    // over demo profiles for as long as the request takes, which briefly shows the
-    // student people who do not exist.
     setHydrating(true);
     setRecommendations([]); setMatches([]); setRequests([]); setFeed([]);
     setConversations({}); setComments({});
     try {
       await loadWorkspace(token);
+    } catch (err) {
+      console.log('Hydrate workspace notice:', err?.message);
     } finally {
       setHydrating(false);
     }
@@ -627,7 +795,9 @@ export default function App() {
       api.profile(token), api.recommendations(token), api.matches(token),
       api.incomingInterests(token), api.posts(token), api.skills(token),
     ]);
-    setUser(toProfile(profile));
+    const normalizedUser = toProfile(profile);
+    setUser(normalizedUser);
+    sessionStorage.setItem('mesh-user', JSON.stringify(normalizedUser));
     const normalizedRecommendations = recommendationRows.map(toRecommendation);
     setRecommendations(normalizedRecommendations);
     setSelectedCandidate(normalizedRecommendations[0]?.id);
@@ -638,37 +808,224 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (auth && !auth.demo && api.enabled) {
-      hydrate(auth.token).catch((error) => toast(error.message || 'Could not refresh the workspace.', 'error'));
-    }
+    const unsubscribe = onAuthStateChanged(fbAuth, async (firebaseUser) => {
+      const storedAuth = (() => {
+        try { return JSON.parse(sessionStorage.getItem('mesh-auth') || 'null'); } catch { return null; }
+      })();
+
+      if (firebaseUser) {
+        if (storedAuth?.demo) return;
+
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          const activeToken = storedAuth?.token || idToken;
+          const nextAuth = { token: activeToken, demo: false, uid: firebaseUser.uid };
+          sessionStorage.setItem('mesh-auth', JSON.stringify(nextAuth));
+          setAuth(nextAuth);
+
+          const storedUser = (() => {
+            try { return JSON.parse(sessionStorage.getItem('mesh-user') || 'null'); } catch { return null; }
+          })();
+          const effectiveUser = storedUser || createMeshUserFromFirebase(firebaseUser);
+          setUser(effectiveUser);
+
+          setRoute((prev) => (prev === 'landing' || prev === 'login' || prev === 'register' ? 'discover' : prev));
+
+          if (api.enabled) {
+            hydrate(activeToken).catch((err) => {
+              console.log('Hydration background refresh:', err?.message);
+            });
+          }
+        } catch (err) {
+          console.error('Error handling auth state change:', err);
+        }
+      } else {
+        if (storedAuth && !storedAuth.demo) {
+          sessionStorage.removeItem('mesh-auth');
+          sessionStorage.removeItem('mesh-user');
+          setAuth(null);
+          setUser(clone(demoUser));
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const authenticate = async (form, mode) => {
-    setBusy(true); setAuthError('');
+    if (busy) return;
+    setBusy(true);
+    setAuthError('');
     try {
-      if (!api.enabled) { useDemo(); return; }
-      const response = mode === 'login' ? await api.login({ email: form.email, password: form.password }) : await api.register(form);
-      const nextAuth = { token: response.token, demo: false };
+      if (!form.email?.trim() || !form.password) {
+        throw new Error('Please enter both email and password.');
+      }
+
+      let fbUser;
+      if (mode === 'login') {
+        const userCredential = await signInWithEmailAndPassword(
+          fbAuth,
+          form.email.trim(),
+          form.password
+        );
+        fbUser = userCredential.user;
+      } else {
+        if (form.password.length < 8) {
+          throw new Error('Password must be at least 8 characters.');
+        }
+        const userCredential = await createUserWithEmailAndPassword(
+          fbAuth,
+          form.email.trim(),
+          form.password
+        );
+        fbUser = userCredential.user;
+        if (form.displayName?.trim()) {
+          try {
+            await updateProfile(fbUser, { displayName: form.displayName.trim() });
+          } catch (profileErr) {
+            console.warn('Could not update Firebase displayName:', profileErr);
+          }
+        }
+      }
+
+      let activeToken = await fbUser.getIdToken();
+      let profileUser = null;
+
+      if (api.enabled) {
+        try {
+          const response = mode === 'login'
+            ? await api.login({ email: form.email.trim(), password: form.password })
+            : await api.register({
+                displayName: form.displayName?.trim() || fbUser.displayName || 'Mesh Student',
+                username: form.username?.trim() || form.email.split('@')[0],
+                email: form.email.trim(),
+                password: form.password,
+              });
+
+          if (response?.token) activeToken = response.token;
+          if (response?.user) profileUser = toProfile(response.user);
+        } catch (apiErr) {
+          if (mode === 'login' && (apiErr.status === 401 || apiErr.status === 404)) {
+            try {
+              const regResponse = await api.register({
+                displayName: fbUser.displayName || form.email.split('@')[0],
+                username: form.email.split('@')[0],
+                email: form.email.trim(),
+                password: form.password,
+              });
+              if (regResponse?.token) activeToken = regResponse.token;
+              if (regResponse?.user) profileUser = toProfile(regResponse.user);
+            } catch {
+              // Ignore fallback registration errors
+            }
+          }
+          console.log('Backend authentication status:', apiErr.message);
+        }
+      }
+
+      if (!profileUser) {
+        profileUser = createMeshUserFromFirebase(fbUser, {
+          displayName: form.displayName?.trim() || fbUser.displayName,
+          username: form.username?.trim(),
+        });
+      }
+
+      const nextAuth = { token: activeToken, demo: false, uid: fbUser.uid };
       sessionStorage.setItem('mesh-auth', JSON.stringify(nextAuth));
-      setAuth(nextAuth); setUser(toProfile(response.user)); setRoute('discover');
-      await hydrate(response.token);
+      sessionStorage.setItem('mesh-user', JSON.stringify(profileUser));
+      setAuth(nextAuth);
+      setUser(profileUser);
+      setRoute('discover');
+
+      if (api.enabled) {
+        try {
+          await hydrate(activeToken);
+        } catch (hydrateErr) {
+          console.log('Hydration status:', hydrateErr.message);
+        }
+      }
+
       toast(mode === 'login' ? 'Welcome back.' : 'Your profile is ready to complete.');
     } catch (error) {
-      setAuthError(error instanceof ApiError ? error.message : 'Could not sign you in. Please try again.');
-    } finally { setBusy(false); }
+      const friendlyMessage = getFriendlyErrorMessage(error);
+      setAuthError(friendlyMessage);
+      toast(friendlyMessage, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const authenticateGoogle = async () => {
+    if (busy) return;
+    setBusy(true);
+    setAuthError('');
+    try {
+      const userCredential = await signInWithPopup(fbAuth, googleProvider);
+      const fbUser = userCredential.user;
+
+      let activeToken = await fbUser.getIdToken();
+      let profileUser = null;
+
+      if (api.enabled) {
+        try {
+          const profile = await api.profile(activeToken);
+          if (profile) profileUser = toProfile(profile);
+        } catch (apiErr) {
+          console.log('Backend profile sync status:', apiErr.message);
+        }
+      }
+
+      if (!profileUser) {
+        profileUser = createMeshUserFromFirebase(fbUser);
+      }
+
+      const nextAuth = { token: activeToken, demo: false, uid: fbUser.uid };
+      sessionStorage.setItem('mesh-auth', JSON.stringify(nextAuth));
+      sessionStorage.setItem('mesh-user', JSON.stringify(profileUser));
+      setAuth(nextAuth);
+      setUser(profileUser);
+      setRoute('discover');
+
+      if (api.enabled) {
+        try {
+          await hydrate(activeToken);
+        } catch (hydrateErr) {
+          console.log('Hydration status:', hydrateErr.message);
+        }
+      }
+
+      toast(`Welcome, ${profileUser.displayName || 'to Mesh'}!`);
+    } catch (error) {
+      if (error.code !== 'auth/popup-closed-by-user') {
+        const friendlyMessage = getFriendlyErrorMessage(error);
+        setAuthError(friendlyMessage);
+        toast(friendlyMessage, 'error');
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const useDemo = () => {
     const nextAuth = { demo: true, token: 'demo' };
     sessionStorage.setItem('mesh-auth', JSON.stringify(nextAuth));
-    setAuth(nextAuth); setRoute('discover'); setAuthError(''); toast('You are exploring the working demo.', 'info');
+    sessionStorage.removeItem('mesh-user');
+    setAuth(nextAuth);
+    setUser(clone(demoUser));
+    setRoute('discover');
+    setAuthError('');
+    toast('You are exploring the working demo.', 'info');
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    try {
+      await fbSignOut(fbAuth);
+    } catch (error) {
+      console.warn('Firebase sign-out notice:', error);
+    }
     sessionStorage.removeItem('mesh-auth');
+    sessionStorage.removeItem('mesh-user');
     setAuth(null);
-    // Every slice, not just auth: conversations and comments are keyed by database id,
-    // so leaving them behind showed the previous account's messages to the next one.
     setUser(clone(demoUser));
     setRecommendations(clone(demoRecommendations));
     setMatches(clone(demoMatches));
@@ -826,7 +1183,22 @@ export default function App() {
   };
 
   if (!auth) {
-    if (route === 'login' || route === 'register') return <><AuthPage mode={route} onModeChange={navigate} onDemo={useDemo} onSubmit={(form) => authenticate(form, route)} busy={busy} error={authError} /><Toast notice={notice} onDismiss={() => setNotice(null)} /></>;
+    if (route === 'login' || route === 'register') {
+      return (
+        <>
+          <AuthPage
+            mode={route}
+            onModeChange={navigate}
+            onDemo={useDemo}
+            onSubmit={(form) => authenticate(form, route)}
+            onGoogleSignIn={authenticateGoogle}
+            busy={busy}
+            error={authError}
+          />
+          <Toast notice={notice} onDismiss={() => setNotice(null)} />
+        </>
+      );
+    }
     return <Landing onStart={() => navigate('register')} onSignIn={() => navigate('login')} />;
   }
 

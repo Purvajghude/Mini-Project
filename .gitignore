@@ -3,3 +3,4 @@ dist/
 node/
 .impeccable/
 .env.local
+.env
