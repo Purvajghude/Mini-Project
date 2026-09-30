@@ -1,9 +1,10 @@
 services:
   - type: web
     name: mesh-api
-    runtime: java
-    buildCommand: cd backend && mvn -DskipTests package
-    startCommand: java -Dserver.port=$PORT -jar backend/target/mesh-api-0.1.0-SNAPSHOT.jar
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     healthCheckPath: /api/v1/actuator/health
     envVars:
       - key: MESH_DATABASE_URL

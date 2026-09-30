@@ -1,0 +1,9 @@
+.git
+.vscode
+node
+node_modules
+dist
+.impeccable
+backend/target
+backend/.env
+*.bak
