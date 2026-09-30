@@ -44,6 +44,23 @@ export const api: ApiClient = {
   getPrivacySettings: () => currentAdapter.getPrivacySettings(),
   updatePrivacySettings: (settings) => currentAdapter.updatePrivacySettings(settings),
 
+  getAdminUsers: () => currentAdapter.getAdminUsers(),
+  createAdminUser: (user) => currentAdapter.createAdminUser(user),
+  deleteAdminUser: (id) => currentAdapter.deleteAdminUser(id),
+  getAdminTransactions: () => currentAdapter.getAdminTransactions(),
+  beginGitHubAuthorization: () => currentAdapter.beginGitHubAuthorization(),
+  getGitHubConnection: () => currentAdapter.getGitHubConnection(),
+  beginDiscordAuthorization: () => currentAdapter.beginDiscordAuthorization(),
+  getDiscordConnection: () => currentAdapter.getDiscordConnection(),
+  getProjectDiscordRoom: (id) => currentAdapter.getProjectDiscordRoom(id),
+  createProjectDiscordRoom: (id) => currentAdapter.createProjectDiscordRoom(id),
+
+  getResources: () => currentAdapter.getResources(),
+  getSavedResources: () => currentAdapter.getSavedResources(),
+  saveResource: (id, status) => currentAdapter.saveResource(id, status),
+  removeSavedResource: (id) => currentAdapter.removeSavedResource(id),
+  updateResourceProgress: (id, status) => currentAdapter.updateResourceProgress(id, status),
+
   setToken: (token) => {
     mockAdapter.setToken(token);
     httpAdapter.setToken(token);
@@ -55,6 +72,9 @@ export const setApiMode = (mode: 'mock' | 'http') => {
   currentAdapter = mode === 'mock' ? mockAdapter : httpAdapter;
 };
 
-export const isUsingMock = () => currentAdapter === mockAdapter;
+export const resetMockDatabase = () => {
+  return mockAdapter.resetDatabase();
+};
 
 export { ApiError } from './client';
+

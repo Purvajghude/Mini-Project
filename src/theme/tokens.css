@@ -106,9 +106,9 @@
   --md-sys-state-pressed-opacity: 0.14;
   --md-sys-state-dragged-opacity: 0.16;
 
-  /* Typography Scale (Material 3 with Roboto Flex & Inter fallback) */
-  --md-ref-typeface-brand: 'Roboto Flex', 'Inter', system-ui, -apple-system, sans-serif;
-  --md-ref-typeface-plain: 'Roboto Flex', 'Inter', system-ui, -apple-system, sans-serif;
+  /* Typography Scale: a calm grotesk keeps dense student work legible. */
+  --md-ref-typeface-brand: 'Geist', 'Arial', system-ui, sans-serif;
+  --md-ref-typeface-plain: 'Geist', 'Arial', system-ui, sans-serif;
 
   /* Display */
   --md-sys-typescale-display-large: 700 57px/64px var(--md-ref-typeface-brand);

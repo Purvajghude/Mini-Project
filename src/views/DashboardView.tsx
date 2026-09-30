@@ -211,6 +211,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               { id: 'community', label: 'Community', icon: 'group' },
               { id: 'chat', label: 'Chat', icon: 'chat_bubble' },
               { id: 'projects', label: 'Projects', icon: 'folder_open' },
+              { id: 'resources', label: 'Resources', icon: 'menu_book' },
             ].map((nav) => {
               const isActive = activeRoute === nav.id;
               return (
@@ -270,8 +271,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         >
           <Avatar
             name={currentUser?.displayName || 'User'}
-            colorKey={currentUser?.avatarKey || 'blue'}
-            size={38}
+            tone={currentUser?.avatarKey || 'blue'}
+            size="sm"
           />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -549,8 +550,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               >
                 <Avatar
                   name={currentUser?.displayName || 'User'}
-                  colorKey={currentUser?.avatarKey || 'blue'}
-                  size={36}
+                  tone={currentUser?.avatarKey || 'blue'}
+                  size="sm"
                 />
               </button>
 
@@ -828,6 +829,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   { id: 'community', label: 'Community', icon: 'group' },
                   { id: 'chat', label: 'Chat', icon: 'chat_bubble' },
                   { id: 'projects', label: 'Projects', icon: 'folder_open' },
+                  { id: 'resources', label: 'Resources', icon: 'menu_book' },
                 ].map((item) => (
                   <button
                     key={item.id}

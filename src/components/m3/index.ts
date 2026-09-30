@@ -8,3 +8,5 @@ export * from './Dialog';
 export * from './Snackbar';
 export * from './Navigation';
 export * from './MaterialSymbol';
+export * from './GithubIcon';
+

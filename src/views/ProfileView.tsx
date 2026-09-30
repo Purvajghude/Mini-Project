@@ -9,7 +9,6 @@ import {
   Edit3,
   ExternalLink,
   GitBranch,
-  Github,
   Plus,
   RefreshCw,
   Sparkles,
@@ -18,7 +17,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { Avatar, Badge, Button, Card, Chip, Dialog, TextField, TextArea } from '../components/m3';
+import { Avatar, Badge, Button, Card, Chip, Dialog, Github, TextField, TextArea } from '../components/m3';
 import { GitHubEvidence, Profile, ProfileSkill, Skill, UpdateProfileRequest } from '../types/api';
 
 interface ProfileViewProps {

@@ -15,8 +15,18 @@ import {
   Skill,
   UpdateProfileRequest,
   AvailabilityPoll,
+  ResourceItem,
+  SavedResource,
+  ResourceProgressStatus,
+  AdminTransaction,
+  AdminUser,
+  DiscordConnectionStatus,
+  GitHubConnectionStatus,
+  OAuthAuthorizationUrl,
+  ProjectDiscordRoom,
 } from '../types/api';
 import { ApiClient, ApiError } from './client';
+import { CURATED_RESOURCES } from '../data/resourcesData';
 
 const STORAGE_KEY = 'mesh_mock_database_v2';
 
@@ -29,6 +39,9 @@ interface MockDatabase {
   conversations: Record<string, ChatMessage[]>;
   projects: Project[];
   privacySettings: PrivacySettings;
+  savedResources: SavedResource[];
+  adminUsers: AdminUser[];
+  adminTransactions: AdminTransaction[];
 }
 
 const DEFAULT_SKILLS: Skill[] = [
@@ -49,6 +62,88 @@ const DEFAULT_SKILLS: Skill[] = [
   { id: 15, name: 'GraphQL', category: 'Architecture' },
   { id: 16, name: 'Kotlin', category: 'Languages' },
 ];
+
+const CAMPUS_NAMES = [
+  'Aarav Shah', 'Aditi Kulkarni', 'Akash Nair', 'Anika Rao', 'Arjun Deshmukh', 'Bhavya Jain',
+  'Dev Mehta', 'Esha Iyer', 'Farhan Khan', 'Ishita Patil', 'Kabir Joshi', 'Kavya Menon',
+  'Manas Borse', 'Meera Gupta', 'Naman Verma', 'Neha Kapoor', 'Nikhil Jadhav', 'Nitya Singh',
+  'Pranav Kulkarni', 'Priya Sahu', 'Rhea Das', 'Rishi Agrawal', 'Saanvi Shetty', 'Sahil More',
+  'Sakshi Jain', 'Samarth Rao', 'Shreya K', 'Siddharth P', 'Tanvi N', 'Tanya Kulkarni',
+];
+
+const CAMPUS_DOMAINS = [
+  ['Frontend & Web Systems', ['React', 'TypeScript', 'JavaScript', 'Figma']],
+  ['Backend & Distributed Systems', ['Java', 'Spring Boot', 'PostgreSQL', 'Docker']],
+  ['Machine Learning & Analytics', ['Python', 'Machine Learning', 'FastAPI', 'PostgreSQL']],
+  ['Cloud & Infrastructure', ['Docker', 'Python', 'Kubernetes', 'TypeScript']],
+  ['Product Design & UX', ['Figma', 'UI/UX Research', 'React', 'JavaScript']],
+  ['Data & Platform Engineering', ['Python', 'PostgreSQL', 'Docker', 'GraphQL']],
+] as const;
+
+const avatarTones = ['sapphire', 'amber', 'emerald', 'violet', 'orange', 'blue'];
+
+function createCampusNetwork(currentUser: Profile): { recommendations: CandidateRecommendation[]; adminUsers: AdminUser[]; projects: Project[] } {
+  const skillByName = new Map(DEFAULT_SKILLS.map((skill) => [skill.name, skill]));
+  const existing = new Set(['cand-001', 'cand-002', 'cand-003', 'cand-004']);
+  const generated: CandidateRecommendation[] = [];
+
+  // 99 peers plus the signed-in student gives the admin directory exactly 100 people.
+  for (let index = 0; index < 99; index += 1) {
+    const id = `cand-${String(index + 1).padStart(3, '0')}`;
+    if (existing.has(id)) continue;
+    const [domain, domainSkills] = CAMPUS_DOMAINS[index % CAMPUS_DOMAINS.length];
+    const name = CAMPUS_NAMES[index % CAMPUS_NAMES.length] + (index >= CAMPUS_NAMES.length ? ` ${Math.floor(index / CAMPUS_NAMES.length) + 1}` : '');
+    const username = name.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '');
+    const profileSkills = domainSkills.map((name, skillIndex) => {
+      const skill = skillByName.get(name);
+      return { id: skill?.id ?? 100 + skillIndex, name, category: skill?.category ?? 'Engineering', proficiency: 3 + ((index + skillIndex) % 3), evidenceSupported: (index + skillIndex) % 3 !== 0 };
+    });
+    const complementary = profileSkills.map((skill) => skill.name).filter((name) => !currentUser.skills.some((mine) => mine.name === name)).slice(0, 3);
+    const shared = profileSkills.map((skill) => skill.name).filter((name) => currentUser.skills.some((mine) => mine.name === name)).slice(0, 2);
+    const evidence = 70 + ((index * 7) % 29);
+    generated.push({
+      userId: id,
+      username,
+      displayName: name,
+      avatarKey: avatarTones[index % avatarTones.length],
+      department: index % 5 === 0 ? 'Information Technology' : index % 5 === 1 ? 'Artificial Intelligence & Data Science' : 'Computer Science & Engineering',
+      yearOfStudy: 2 + (index % 3),
+      bio: `Building practical ${domain.toLowerCase()} work with peers, documentation, and evidence from shipped repositories.`,
+      availability: `${5 + (index % 6)}–${7 + (index % 6)} hrs / week`,
+      primaryDomain: domain,
+      score: Math.max(61, 94 - Math.floor(index / 3)),
+      reason: complementary.length ? `Evidence-backed ${complementary.slice(0, 2).join(' and ')} fills a useful gap for your current web systems work.` : `Shared ${shared.join(' and ') || 'project interests'} gives this collaboration a quick starting point.`,
+      skills: profileSkills,
+      sharedSkills: shared,
+      complementarySkills: complementary,
+      breakdown: { gapFill: Math.min(98, evidence + 3), sharedGround: 58 + ((index * 3) % 35), depth: evidence, categoryReach: 65 + ((index * 5) % 30) },
+      githubEvidence: {
+        connected: index % 8 !== 0,
+        githubUsername: index % 8 !== 0 ? username : null,
+        verifiedCommits: 32 + ((index * 17) % 460),
+        topLanguages: [{ language: domainSkills[0], percentage: 58 }, { language: domainSkills[1], percentage: 27 }, { language: domainSkills[2], percentage: 15 }],
+        pinnedRepos: [{ name: `${username}-studio`, description: `A focused ${domain.toLowerCase()} project with readable commit history.`, stars: 2 + (index % 38), forks: index % 11, primaryLanguage: domainSkills[0], updatedAt: `${1 + (index % 12)} days ago`, verified: index % 4 !== 0, commitsCount: 18 + ((index * 9) % 180) }],
+        lastSyncedAt: index % 8 !== 0 ? `${1 + (index % 6)} days ago` : null,
+      },
+      savedForLater: false,
+      status: 'none',
+    });
+  }
+
+  const recommendations = generated;
+  const adminUsers: AdminUser[] = [
+    { id: currentUser.id, displayName: currentUser.displayName, username: currentUser.username, department: currentUser.department || 'Engineering', yearOfStudy: currentUser.yearOfStudy || 3, status: 'ACTIVE', verifiedSkills: currentUser.skills.filter((skill) => skill.evidenceSupported).length, joinedAt: '2026-08-28', avatarKey: currentUser.avatarKey },
+    ...recommendations.map((candidate, index): AdminUser => ({ id: candidate.userId, displayName: candidate.displayName, username: candidate.username, department: candidate.department || 'Engineering', yearOfStudy: candidate.yearOfStudy || 3, status: index % 17 === 0 ? 'PENDING' : 'ACTIVE', verifiedSkills: candidate.skills.filter((skill) => skill.evidenceSupported).length, joinedAt: `2026-0${7 + (index % 3)}-${String(2 + (index % 25)).padStart(2, '0')}`, avatarKey: candidate.avatarKey })),
+  ];
+  const projectThemes = ['Campus Transit Pulse', 'Peer Review Studio', 'Study Group Matcher', 'Lab Equipment Ledger', 'Attendance Insight', 'Open Source Clinic', 'Freshers Navigator', 'Hackathon Pairing'];
+  const projects = Array.from({ length: 24 }, (_, index): Project => {
+    const member = recommendations[index];
+    const theme = projectThemes[index % projectThemes.length];
+    const tag = CAMPUS_DOMAINS[index % CAMPUS_DOMAINS.length][1][0];
+    return { id: `community-proj-${index + 1}`, title: `${theme} ${index + 1}`, slug: `${theme}-${index + 1}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'), description: `A student-built ${tag} project looking for one collaborator to turn a proven idea into a useful campus tool.`, category: index % 3 === 0 ? 'Campus Life' : index % 3 === 1 ? 'Developer Tools' : 'Social Impact', status: index % 6 === 0 ? 'PLANNING' : 'ACTIVE', lead: { id: member.userId, displayName: member.displayName, username: member.username }, members: [{ id: member.userId, displayName: member.displayName, username: member.username, role: 'Project lead', avatarKey: member.avatarKey }], openRoles: [{ title: index % 2 ? 'Product engineer' : 'Research collaborator', skillsNeeded: [tag, 'Communication'], capacity: 1 }], tags: [tag, 'Student-built', 'Open collaboration'], tasks: [], events: [], availabilityPolls: [], githubRepoUrl: `https://github.com/${member.username}/${theme.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, createdAt: `2026-09-${String(1 + (index % 28)).padStart(2, '0')}` };
+  });
+  return { recommendations, adminUsers, projects };
+}
 
 function getInitialDatabase(): MockDatabase {
   const currentProfileSkills: ProfileSkill[] = [
@@ -645,15 +740,42 @@ function getInitialDatabase(): MockDatabase {
     githubSyncEnabled: true,
   };
 
+  const savedResources: SavedResource[] = [
+    {
+      resourceId: 'rm-frontend',
+      savedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      status: 'in_progress',
+    },
+    {
+      resourceId: 'byox-git',
+      savedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+      status: 'not_started',
+    },
+  ];
+
+  const campusNetwork = createCampusNetwork(currentUser);
+
   return {
     currentUser,
     skills: DEFAULT_SKILLS,
-    recommendations,
+    recommendations: [...recommendations, ...campusNetwork.recommendations],
     incomingInterests,
     matches,
     conversations,
-    projects,
+    projects: [...projects, ...campusNetwork.projects],
     privacySettings,
+    savedResources,
+    adminUsers: campusNetwork.adminUsers,
+    adminTransactions: campusNetwork.adminUsers.slice(0, 28).map((member, index) => ({
+      id: `txn-${String(index + 1).padStart(3, '0')}`,
+      userId: member.id,
+      userName: member.displayName,
+      description: index % 3 === 0 ? 'Skill evidence verification' : index % 3 === 1 ? 'MESH campus credits' : 'Campus access subscription',
+      type: index % 3 === 0 ? 'VERIFICATION' : index % 3 === 1 ? 'CREDIT' : 'SUBSCRIPTION',
+      amount: index % 3 === 1 ? 0 : index % 3 === 0 ? 49 : 99,
+      status: index % 9 === 0 ? 'PENDING' : 'COMPLETED',
+      createdAt: `2026-09-${String(29 - (index % 24)).padStart(2, '0')} · ${String(9 + (index % 8)).padStart(2, '0')}:30`,
+    })),
   };
 }
 
@@ -666,15 +788,46 @@ export class MockApiAdapter implements ApiClient {
   }
 
   private loadDatabase(): MockDatabase {
+    const fresh = getInitialDatabase();
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        const merged: MockDatabase = {
+          ...fresh,
+          ...parsed,
+          currentUser: {
+            ...fresh.currentUser,
+            ...(parsed.currentUser || {}),
+            skills:
+              parsed.currentUser && Array.isArray(parsed.currentUser.skills) && parsed.currentUser.skills.length
+                ? parsed.currentUser.skills
+                : fresh.currentUser.skills,
+            onboardingComplete: true, // Guarantee dashboard is immediately accessible
+          },
+          skills: fresh.skills,
+          recommendations: Array.isArray(parsed.recommendations) && parsed.recommendations.length >= 99 ? parsed.recommendations : fresh.recommendations,
+          projects: Array.isArray(parsed.projects) && parsed.projects.length >= 27 ? parsed.projects : fresh.projects,
+          matches: Array.isArray(parsed.matches) ? parsed.matches : fresh.matches,
+          conversations: parsed.conversations || fresh.conversations,
+          incomingInterests: Array.isArray(parsed.incomingInterests) ? parsed.incomingInterests : fresh.incomingInterests,
+          privacySettings: parsed.privacySettings || fresh.privacySettings,
+          savedResources: Array.isArray(parsed.savedResources) ? parsed.savedResources : fresh.savedResources,
+          adminUsers: Array.isArray(parsed.adminUsers) && parsed.adminUsers.length >= 100 ? parsed.adminUsers : fresh.adminUsers,
+          adminTransactions: Array.isArray(parsed.adminTransactions) ? parsed.adminTransactions : fresh.adminTransactions,
+        };
+        return merged;
       }
     } catch {
       // Fallback
     }
+    this.persist(fresh);
+    return fresh;
+  }
+
+  resetDatabase(): MockDatabase {
     const fresh = getInitialDatabase();
+    this.db = fresh;
     this.persist(fresh);
     return fresh;
   }
@@ -691,6 +844,17 @@ export class MockApiAdapter implements ApiClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private rerankRecommendations(): void {
+    const ownSkills = new Set(this.db.currentUser.skills.map((skill) => skill.name.toLowerCase()));
+    this.db.recommendations = this.db.recommendations.map((candidate) => {
+      const sharedSkills = candidate.skills.filter((skill) => ownSkills.has(skill.name.toLowerCase())).map((skill) => skill.name).slice(0, 3);
+      const complementarySkills = candidate.skills.filter((skill) => !ownSkills.has(skill.name.toLowerCase())).map((skill) => skill.name).slice(0, 3);
+      const evidence = candidate.githubEvidence?.connected ? Math.min(100, Math.round((candidate.githubEvidence.verifiedCommits / 5) + (candidate.githubEvidence.pinnedRepos.some((repo) => repo.verified) ? 20 : 0))) : 42;
+      const score = Math.round(Math.min(99, complementarySkills.length * 18 + sharedSkills.length * 10 + evidence * .38 + candidate.breakdown.categoryReach * .16));
+      return { ...candidate, score, sharedSkills, complementarySkills, reason: complementarySkills.length ? `Evidence-backed ${complementarySkills.slice(0, 2).join(' and ')} complements your current skills; ${sharedSkills.length ? `you also share ${sharedSkills.join(' and ')}.` : 'the team gains a distinct capability.'}` : `Shared ${sharedSkills.join(' and ') || 'project interests'} creates a practical place to begin.` };
+    }).sort((a, b) => b.score - a.score);
+  }
+
   setToken(token: string | null): void {
     this.token = token;
   }
@@ -702,27 +866,27 @@ export class MockApiAdapter implements ApiClient {
   // --- OpenAPI 3.1.0 Contract Endpoints ---
 
   async register(body: RegisterRequest): Promise<AuthResponse> {
-    await this.latency(200);
+    await this.latency(150);
 
-    if (!body.email || !body.password || !body.displayName || !body.username) {
-      throw new ApiError('Validation error', 400, {
-        displayName: !body.displayName ? 'Display name is required' : '',
-        email: !body.email ? 'Valid email required' : '',
-      });
-    }
+    const safeDisplayName = (body.displayName || '').trim() || 'Purvaj Ghude';
+    const safeUsername = (body.username || '').trim() || (body.email ? body.email.split('@')[0] : 'purvaj.builds');
 
     const newUser: Profile = {
       id: `usr-${Date.now()}`,
-      username: body.username,
-      displayName: body.displayName,
-      department: null,
-      yearOfStudy: null,
-      bio: null,
-      avatarKey: 'blue',
-      availability: null,
-      primaryDomain: null,
-      onboardingComplete: false,
-      skills: [],
+      username: safeUsername,
+      displayName: safeDisplayName,
+      department: 'Computer Science & Engineering',
+      yearOfStudy: 3,
+      bio: 'Enthusiastic university student building collaborative campus projects.',
+      avatarKey: 'sapphire',
+      availability: '8–10 hrs / week',
+      primaryDomain: 'Frontend & Web Systems',
+      onboardingComplete: true,
+      skills: [
+        { id: 1, name: 'React', category: 'Frontend', proficiency: 4, evidenceSupported: false },
+        { id: 2, name: 'TypeScript', category: 'Languages', proficiency: 3, evidenceSupported: false },
+        { id: 7, name: 'PostgreSQL', category: 'Database', proficiency: 3, evidenceSupported: false },
+      ],
     };
 
     this.db.currentUser = newUser;
@@ -737,11 +901,21 @@ export class MockApiAdapter implements ApiClient {
   }
 
   async login(body: LoginRequest): Promise<AuthResponse> {
-    await this.latency(200);
+    await this.latency(150);
 
-    if (!body.email || !body.password) {
-      throw new ApiError('Email and password are required', 400);
+    // Guarantee currentUser is fully initialized
+    if (!this.db.currentUser || !this.db.currentUser.displayName) {
+      this.db.currentUser = getInitialDatabase().currentUser;
     }
+
+    // Always ensure onboardingComplete is true so user goes straight to Dashboard
+    this.db.currentUser = {
+      ...this.db.currentUser,
+      onboardingComplete: true,
+    };
+
+    this.rerankRecommendations();
+    this.persist();
 
     return {
       token: 'mock-jwt-token-active',
@@ -790,6 +964,7 @@ export class MockApiAdapter implements ApiClient {
     });
 
     this.db.currentUser.skills = updatedProfileSkills;
+    this.rerankRecommendations();
     this.persist();
     return JSON.parse(JSON.stringify(this.db.currentUser));
   }
@@ -1097,4 +1272,97 @@ export class MockApiAdapter implements ApiClient {
     this.persist();
     return JSON.parse(JSON.stringify(this.db.privacySettings));
   }
+
+  async getAdminUsers(): Promise<AdminUser[]> {
+    await this.latency(90);
+    return JSON.parse(JSON.stringify(this.db.adminUsers));
+  }
+
+  async createAdminUser(user: Omit<AdminUser, 'id' | 'joinedAt' | 'verifiedSkills'> & { verifiedSkills?: number }): Promise<AdminUser> {
+    await this.latency(120);
+    const created: AdminUser = { ...user, id: `admin-user-${Date.now()}`, joinedAt: new Date().toISOString().slice(0, 10), verifiedSkills: user.verifiedSkills ?? 0, avatarKey: user.avatarKey || 'sapphire' };
+    this.db.adminUsers.unshift(created);
+    this.persist();
+    return JSON.parse(JSON.stringify(created));
+  }
+
+  async deleteAdminUser(userId: string): Promise<void> {
+    await this.latency(120);
+    if (userId === this.db.currentUser.id) throw new ApiError('The active administrator account cannot be deleted.', 400);
+    this.db.adminUsers = this.db.adminUsers.filter((user) => user.id !== userId);
+    this.db.recommendations = this.db.recommendations.filter((candidate) => candidate.userId !== userId);
+    this.persist();
+  }
+
+  async getAdminTransactions(): Promise<AdminTransaction[]> {
+    await this.latency(90);
+    return JSON.parse(JSON.stringify(this.db.adminTransactions));
+  }
+
+  async beginGitHubAuthorization(): Promise<OAuthAuthorizationUrl> { throw new ApiError('GitHub verification is available after the shared API is deployed.', 503); }
+  async getGitHubConnection(): Promise<GitHubConnectionStatus> { return { connected: false, login: null, avatarUrl: null, publicRepositoryCount: 0, authorizedAt: null, lastSyncedAt: null }; }
+  async beginDiscordAuthorization(): Promise<OAuthAuthorizationUrl> { throw new ApiError('Discord linking is available after the shared API is deployed.', 503); }
+  async getDiscordConnection(): Promise<DiscordConnectionStatus> { return { connected: false, discordUserId: null, username: null, globalName: null, connectedAt: null }; }
+  async getProjectDiscordRoom(_projectId: string): Promise<ProjectDiscordRoom> { return { available: false, channelId: null, inviteUrl: null, lastSyncedAt: null }; }
+  async createProjectDiscordRoom(_projectId: string): Promise<ProjectDiscordRoom> { throw new ApiError('Discord rooms are available after the shared API is deployed and each member links Discord.', 503); }
+
+  // --- Resources & Learning List ---
+
+  async getResources(): Promise<ResourceItem[]> {
+    await this.latency(60);
+    return JSON.parse(JSON.stringify(CURATED_RESOURCES));
+  }
+
+  async getSavedResources(): Promise<SavedResource[]> {
+    await this.latency(60);
+    if (!this.db.savedResources) {
+      this.db.savedResources = [];
+      this.persist();
+    }
+    return JSON.parse(JSON.stringify(this.db.savedResources));
+  }
+
+  async saveResource(resourceId: string, status: ResourceProgressStatus = 'not_started'): Promise<SavedResource[]> {
+    await this.latency(90);
+    if (!this.db.savedResources) this.db.savedResources = [];
+
+    const existingIdx = this.db.savedResources.findIndex((r) => r.resourceId === resourceId);
+    if (existingIdx !== -1) {
+      this.db.savedResources[existingIdx].status = status;
+    } else {
+      this.db.savedResources.push({
+        resourceId,
+        savedAt: new Date().toISOString(),
+        status,
+      });
+    }
+    this.persist();
+    return JSON.parse(JSON.stringify(this.db.savedResources));
+  }
+
+  async removeSavedResource(resourceId: string): Promise<SavedResource[]> {
+    await this.latency(90);
+    if (!this.db.savedResources) this.db.savedResources = [];
+    this.db.savedResources = this.db.savedResources.filter((r) => r.resourceId !== resourceId);
+    this.persist();
+    return JSON.parse(JSON.stringify(this.db.savedResources));
+  }
+
+  async updateResourceProgress(resourceId: string, status: ResourceProgressStatus): Promise<SavedResource[]> {
+    await this.latency(90);
+    if (!this.db.savedResources) this.db.savedResources = [];
+    const item = this.db.savedResources.find((r) => r.resourceId === resourceId);
+    if (item) {
+      item.status = status;
+    } else {
+      this.db.savedResources.push({
+        resourceId,
+        savedAt: new Date().toISOString(),
+        status,
+      });
+    }
+    this.persist();
+    return JSON.parse(JSON.stringify(this.db.savedResources));
+  }
 }
+

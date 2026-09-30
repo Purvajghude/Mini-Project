@@ -7,8 +7,9 @@ import {
   Settings,
   Sparkles,
   User,
+  BookOpen,
 } from 'lucide-react';
-import { api, isUsingMock, setApiMode } from './api';
+import { api } from './api/index';
 import {
   Avatar,
   NavigationBar,
@@ -28,6 +29,16 @@ import {
   RegisterRequest,
   Skill,
   UpdateProfileRequest,
+  ResourceItem,
+  SavedResource,
+  ResourceProgressStatus,
+  AdminTransaction,
+  AdminUser,
+  DiscordConnectionStatus,
+  GitHubConnectionStatus,
+  ProjectTask,
+  ProjectEvent,
+  AvailabilityPoll,
 } from './types/api';
 import { AuthView } from './views/AuthView';
 import { ConnectionsView } from './views/ConnectionsView';
@@ -37,7 +48,7 @@ import { ProfileView } from './views/ProfileView';
 import { ProjectsView } from './views/ProjectsView';
 import { SettingsView } from './views/SettingsView';
 import { WelcomeView } from './views/WelcomeView';
-import { DashboardView } from './views/DashboardView';
+import { ResourcesView } from './views/ResourcesView';
 import { MaterialSymbol } from './components/m3';
 import Landing from './pages/Landing.jsx';
 
@@ -69,6 +80,12 @@ export default function App() {
   const [requests, setRequests] = useState<IncomingInterest[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings | null>(null);
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
+  const [githubConnection, setGithubConnection] = useState<GitHubConnectionStatus>({ connected: false, login: null, avatarUrl: null, publicRepositoryCount: 0, authorizedAt: null, lastSyncedAt: null });
+  const [discordConnection, setDiscordConnection] = useState<DiscordConnectionStatus>({ connected: false, discordUserId: null, username: null, globalName: null, connectedAt: null });
 
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -83,7 +100,7 @@ export default function App() {
   const loadData = async () => {
     try {
       setBusy(true);
-      const [profileData, skillCatalog, recs, incoming, matchesList, projectList, settings] =
+      const [profileData, skillCatalog, recs, incoming, matchesList, projectList, settings, resourceList, savedList, userDirectory, transactionList, githubStatus, discordStatus] =
         await Promise.all([
           api.getProfile(),
           api.getSkills(),
@@ -92,6 +109,12 @@ export default function App() {
           api.getMatches(),
           api.getProjects(),
           api.getPrivacySettings(),
+          api.getResources(),
+          api.getSavedResources(),
+          api.getAdminUsers(),
+          api.getAdminTransactions(),
+          api.getGitHubConnection(),
+          api.getDiscordConnection(),
         ]);
 
       setUser(profileData);
@@ -101,6 +124,12 @@ export default function App() {
       setMatches(matchesList);
       setProjects(projectList);
       setPrivacySettings(settings);
+      setResources(resourceList);
+      setSavedResources(savedList);
+      setAdminUsers(userDirectory);
+      setTransactions(transactionList);
+      setGithubConnection(githubStatus);
+      setDiscordConnection(discordStatus);
 
       // Check if onboarding is needed
       if (!profileData.onboardingComplete) {
@@ -131,17 +160,22 @@ export default function App() {
         ? await api.register(data as RegisterRequest)
         : await api.login(data as LoginRequest);
 
+      api.setToken(response.token);
       const nextAuth = { token: response.token, demo: false };
       sessionStorage.setItem('mesh-auth', JSON.stringify(nextAuth));
       setAuth(nextAuth);
       setUser(response.user);
 
-      if (!response.user.onboardingComplete || isRegister) {
+      if (!response.user.onboardingComplete) {
         setShowOnboarding(true);
       }
       setRoute('discover');
       toast(isRegister ? 'Account created! Welcome to MESH.' : 'Welcome back!');
-      await loadData();
+      try {
+        await loadData();
+      } catch (loadErr) {
+        console.warn('Background data load warning:', loadErr);
+      }
     } catch (err: any) {
       setAuthError(err.message || 'Authentication failed. Please verify credentials.');
     } finally {
@@ -414,6 +448,69 @@ export default function App() {
     }
   };
 
+  const handleSaveResource = async (resourceId: string, status?: ResourceProgressStatus) => {
+    try {
+      const updated = await api.saveResource(resourceId, status);
+      setSavedResources(updated);
+    } catch (err: any) {
+      toast(err.message || 'Could not save resource.');
+    }
+  };
+
+  const handleRemoveSavedResource = async (resourceId: string) => {
+    try {
+      const updated = await api.removeSavedResource(resourceId);
+      setSavedResources(updated);
+    } catch (err: any) {
+      toast(err.message || 'Could not remove resource.');
+    }
+  };
+
+  const handleUpdateResourceProgress = async (resourceId: string, status: ResourceProgressStatus) => {
+    try {
+      const updated = await api.updateResourceProgress(resourceId, status);
+      setSavedResources(updated);
+    } catch (err: any) {
+      toast(err.message || 'Could not update resource progress.');
+    }
+  };
+
+  const handleCreateAdminUser = async (newUser: Omit<AdminUser, 'id' | 'joinedAt' | 'verifiedSkills'> & { verifiedSkills?: number }) => {
+    try {
+      const created = await api.createAdminUser(newUser);
+      setAdminUsers((current) => [created, ...current]);
+      toast(`${created.displayName} was added to the demo directory.`);
+    } catch (err: any) { toast(err.message || 'Could not add this user.'); }
+  };
+
+  const handleDeleteAdminUser = async (userId: string) => {
+    try {
+      await api.deleteAdminUser(userId);
+      setAdminUsers((current) => current.filter((member) => member.id !== userId));
+      setRecommendations((current) => current.filter((candidate) => candidate.userId !== userId));
+      toast('User removed from the demo directory.');
+    } catch (err: any) { toast(err.message || 'Could not remove this user.'); }
+  };
+
+  const handleBeginGitHubAuthorization = async () => {
+    try { window.location.assign((await api.beginGitHubAuthorization()).authorizationUrl); }
+    catch (err: any) { toast(err.message || 'Could not start GitHub verification.'); }
+  };
+
+  const handleBeginDiscordAuthorization = async () => {
+    try { window.location.assign((await api.beginDiscordAuthorization()).authorizationUrl); }
+    catch (err: any) { toast(err.message || 'Could not start Discord linking.'); }
+  };
+
+  const handleOpenDiscordRoom = async (projectId: string) => {
+    try {
+      let room = await api.getProjectDiscordRoom(projectId);
+      if (!room.available) room = await api.createProjectDiscordRoom(projectId);
+      if (!room.inviteUrl) throw new Error('The Discord room could not provide an invite link.');
+      window.open(room.inviteUrl, '_blank', 'noopener,noreferrer');
+    } catch (err: any) { toast(err.message || 'Could not open the Discord project room.'); }
+  };
+
   // Destinations for M3 Navigation
   const unreadMessagesCount = matches.reduce((acc, m) => acc + (m.unreadCount || 0), 0);
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
@@ -434,6 +531,16 @@ export default function App() {
       id: 'projects',
       label: 'Projects',
       icon: <FolderGit2 size={22} />,
+    },
+    {
+      id: 'resources',
+      label: 'Resources',
+      icon: <BookOpen size={22} />,
+    },
+    {
+      id: 'build-guides',
+      label: 'Build guides',
+      icon: <Sparkles size={22} />,
     },
     {
       id: 'profile',
@@ -482,41 +589,6 @@ export default function App() {
           }}
         />
         <Snackbar message={notice} onDismiss={() => setNotice(null)} />
-      </>
-    );
-  }
-
-  // Home Dashboard Flow (Exact Wireframe 3-column & mobile responsive)
-  if (route === 'discover') {
-    return (
-      <>
-        <DashboardView
-          currentUser={user}
-          recommendations={recommendations}
-          projects={projects}
-          activeRoute="discover"
-          onNavigate={(next) => {
-            if (next === 'community' || next === 'chat') setRoute('connections');
-            else setRoute(next);
-          }}
-          onConnect={handleConnect}
-          onPass={handlePass}
-          onSave={handleSave}
-          onSignOut={handleSignOut}
-          onReplayWelcome={() => setShowWelcome(true)}
-          onToast={toast}
-          unreadCount={unreadMessagesCount + pendingRequestsCount}
-        />
-        <Snackbar message={notice} onDismiss={() => setNotice(null)} />
-        {user && (
-          <OnboardingDialog
-            open={showOnboarding}
-            profile={user}
-            availableSkills={skills}
-            onComplete={handleOnboardingComplete}
-            busy={busy}
-          />
-        )}
       </>
     );
   }
@@ -657,7 +729,15 @@ export default function App() {
           {route === 'settings' && privacySettings && (
             <SettingsView
               settings={privacySettings}
+              adminUsers={adminUsers}
+              transactions={transactions}
+              githubConnection={githubConnection}
+              discordConnection={discordConnection}
               onUpdateSettings={handleUpdatePrivacySettings}
+              onBeginGitHubAuthorization={handleBeginGitHubAuthorization}
+              onBeginDiscordAuthorization={handleBeginDiscordAuthorization}
+              onCreateAdminUser={handleCreateAdminUser}
+              onDeleteAdminUser={handleDeleteAdminUser}
               onSignOut={handleSignOut}
               onToast={toast}
               busy={busy}
@@ -700,6 +780,26 @@ export default function App() {
               onCreateEvent={handleCreateEvent}
               onVotePoll={handleVotePoll}
               onCreatePoll={handleCreatePoll}
+              onOpenDiscordRoom={handleOpenDiscordRoom}
+              onToast={toast}
+              busy={busy}
+            />
+          )}
+
+          {(route === 'resources' || route === 'build-guides') && user && (
+            <ResourcesView
+              initialSection={route === 'build-guides' ? 'build' : 'roadmaps'}
+              currentUser={user}
+              resources={resources}
+              savedResources={savedResources}
+              recommendations={recommendations}
+              projects={projects}
+              onSaveResource={handleSaveResource}
+              onRemoveSavedResource={handleRemoveSavedResource}
+              onUpdateResourceProgress={handleUpdateResourceProgress}
+              onConnectWithPeer={handleConnect}
+              onNavigateToProject={() => setRoute('projects')}
+              onNavigateToDiscover={() => setRoute('discover')}
               onToast={toast}
               busy={busy}
             />

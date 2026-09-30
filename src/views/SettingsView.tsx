@@ -1,254 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Bell,
-  Check,
-  Eye,
-  Github,
-  Globe,
-  Lock,
-  LogOut,
-  RefreshCw,
-  RotateCcw,
-  Shield,
-  User,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, ChevronRight, GitBranch, Globe, Lock, LogOut, MessageCircle, Shield, UserPlus, Users, WalletCards, X } from 'lucide-react';
 import { Button, Card } from '../components/m3';
-import { PrivacySettings } from '../types/api';
+import { AdminTransaction, AdminUser, DiscordConnectionStatus, GitHubConnectionStatus, PrivacySettings } from '../types/api';
+import './SettingsView.css';
 
 interface SettingsViewProps {
   settings: PrivacySettings;
+  adminUsers: AdminUser[];
+  transactions: AdminTransaction[];
+  githubConnection: GitHubConnectionStatus;
+  discordConnection: DiscordConnectionStatus;
   onUpdateSettings: (updates: Partial<PrivacySettings>) => Promise<void>;
+  onBeginGitHubAuthorization: () => Promise<void>;
+  onBeginDiscordAuthorization: () => Promise<void>;
+  onCreateAdminUser: (user: Omit<AdminUser, 'id' | 'joinedAt' | 'verifiedSkills'> & { verifiedSkills?: number }) => Promise<void>;
+  onDeleteAdminUser: (userId: string) => Promise<void>;
   onSignOut: () => void;
   onToast: (msg: string) => void;
   busy?: boolean;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({
-  settings,
-  onUpdateSettings,
-  onSignOut,
-  onToast,
-  busy = false,
-}) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ settings, adminUsers, transactions, githubConnection, discordConnection, onUpdateSettings, onBeginGitHubAuthorization, onBeginDiscordAuthorization, onCreateAdminUser, onDeleteAdminUser, onSignOut, onToast, busy = false }) => {
   const [localSettings, setLocalSettings] = useState<PrivacySettings>(settings);
-
-  useEffect(() => {
-    setLocalSettings(settings);
-  }, [settings]);
-
-  const toggle = async (key: keyof PrivacySettings) => {
-    const nextVal = !localSettings[key];
-    const updated = { ...localSettings, [key]: nextVal };
-    setLocalSettings(updated);
-    await onUpdateSettings({ [key]: nextVal });
-    onToast('Settings updated.');
-  };
-
-  const handleVisibilityChange = async (visibility: PrivacySettings['profileVisibility']) => {
-    setLocalSettings({ ...localSettings, profileVisibility: visibility });
-    await onUpdateSettings({ profileVisibility: visibility });
-    onToast(`Profile visibility set to ${visibility.toLowerCase().replace('_', ' ')}.`);
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 840, margin: '0 auto' }}>
-      <div>
-        <h1 style={{ margin: '0 0 4px 0', fontSize: 24, fontWeight: 750, color: 'var(--md-sys-color-on-surface)' }}>
-          Profile &amp; Privacy Settings
-        </h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--md-sys-color-on-surface-variant)' }}>
-          Control your profile discoverability, contact confidentiality, and evidence synchronization.
-        </p>
-      </div>
-
-      {/* Profile Visibility */}
-      <Card variant="outlined" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Globe size={20} color="var(--md-sys-color-primary)" />
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Profile Discoverability &amp; Reach</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-          {[
-            {
-              id: 'CAMPUS',
-              title: 'Entire Campus',
-              desc: 'Visible to all verified students and faculty on the university network.',
-            },
-            {
-              id: 'CONNECTIONS_ONLY',
-              title: 'Connections Only',
-              desc: 'Only peers who have successfully matched with you can view full details.',
-            },
-            {
-              id: 'PRIVATE',
-              title: 'Private & Hidden',
-              desc: 'Pause discovery; your card will not appear in the collaborator feed.',
-            },
-          ].map((opt) => {
-            const isSelected = localSettings.profileVisibility === opt.id;
-            return (
-              <div
-                key={opt.id}
-                onClick={() => handleVisibilityChange(opt.id as any)}
-                style={{
-                  padding: 16,
-                  borderRadius: 'var(--md-sys-shape-corner-medium)',
-                  border: `2px solid ${
-                    isSelected ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline-variant)'
-                  }`,
-                  backgroundColor: isSelected
-                    ? 'var(--md-sys-color-primary-container)'
-                    : 'var(--md-sys-color-surface-container-low)',
-                  color: isSelected
-                    ? 'var(--md-sys-color-on-primary-container)'
-                    : 'var(--md-sys-color-on-surface)',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <strong style={{ fontSize: 14 }}>{opt.title}</strong>
-                  {isSelected && <Check size={16} />}
-                </div>
-                <p style={{ margin: 0, fontSize: 12, opacity: 0.85 }}>{opt.desc}</p>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Privacy Toggles */}
-      <Card variant="outlined" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Shield size={20} color="var(--md-sys-color-primary)" />
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Privacy &amp; Contact Shielding</h2>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Email Shield */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong style={{ fontSize: 14, display: 'block' }}>Shield College Email</strong>
-              <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                {localSettings.showEmail
-                  ? 'Your university email is visible on your profile.'
-                  : 'Your email is hidden. Students must initiate a MESH collaboration request first.'}
-              </span>
-            </div>
-            <Button
-              variant={!localSettings.showEmail ? 'filled' : 'outlined'}
-              size="sm"
-              onClick={() => toggle('showEmail')}
-            >
-              {!localSettings.showEmail ? 'Shielded' : 'Public'}
-            </Button>
-          </div>
-
-          {/* Algorithmic Discovery */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong style={{ fontSize: 14, display: 'block' }}>Algorithmic Peer Suggestions</strong>
-              <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                Allow MESH to analyze your skill complementarities and recommend you to team leads.
-              </span>
-            </div>
-            <Button
-              variant={localSettings.allowDiscovery ? 'filled' : 'outlined'}
-              size="sm"
-              onClick={() => toggle('allowDiscovery')}
-            >
-              {localSettings.allowDiscovery ? 'Enabled' : 'Paused'}
-            </Button>
-          </div>
-
-          {/* GitHub Sync */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong style={{ fontSize: 14, display: 'block' }}>Automatic GitHub Evidence Sync</strong>
-              <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                Periodically synchronize repository commits, languages, and stars to your profile.
-              </span>
-            </div>
-            <Button
-              variant={localSettings.githubSyncEnabled ? 'filled' : 'outlined'}
-              size="sm"
-              onClick={() => toggle('githubSyncEnabled')}
-            >
-              {localSettings.githubSyncEnabled ? 'Active' : 'Disabled'}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Notification Preferences */}
-      <Card variant="outlined" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Bell size={20} color="var(--md-sys-color-primary)" />
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Notifications &amp; Alerts</h2>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong style={{ fontSize: 14, display: 'block' }}>Match &amp; Collaboration Requests</strong>
-              <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                Get notified whenever a peer sends you an interest request or accepts your handshake.
-              </span>
-            </div>
-            <Button
-              variant={localSettings.notifyOnMatch ? 'tonal' : 'outlined'}
-              size="sm"
-              onClick={() => toggle('notifyOnMatch')}
-            >
-              {localSettings.notifyOnMatch ? 'On' : 'Muted'}
-            </Button>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong style={{ fontSize: 14, display: 'block' }}>Project Chat &amp; Channel Messages</strong>
-              <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                Receive notifications for new messages inside active project channels.
-              </span>
-            </div>
-            <Button
-              variant={localSettings.notifyOnMessage ? 'tonal' : 'outlined'}
-              size="sm"
-              onClick={() => toggle('notifyOnMessage')}
-            >
-              {localSettings.notifyOnMessage ? 'On' : 'Muted'}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Account Session */}
-      <Card
-        variant="filled"
-        style={{
-          padding: 24,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 16,
-        }}
-      >
-        <div>
-          <strong style={{ fontSize: 15, display: 'block' }}>Account Session</strong>
-          <span style={{ fontSize: 13, color: 'var(--md-sys-color-on-surface-variant)' }}>
-            Manage your authenticated session or sign out securely.
-          </span>
-        </div>
-        <Button
-          variant="tonal"
-          icon={<LogOut size={15} />}
-          onClick={onSignOut}
-        >
-          Sign Out
-        </Button>
-      </Card>
-    </div>
-  );
+  const [activeTab, setActiveTab] = useState<'preferences' | 'admin'>('preferences');
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [query, setQuery] = useState('');
+  const [draft, setDraft] = useState({ displayName: '', username: '', department: 'Computer Science & Engineering', yearOfStudy: 3 });
+  useEffect(() => setLocalSettings(settings), [settings]);
+  const toggle = async (key: keyof PrivacySettings) => { const nextValue = !localSettings[key]; setLocalSettings((current) => ({ ...current, [key]: nextValue })); await onUpdateSettings({ [key]: nextValue }); onToast('Settings updated.'); };
+  const setVisibility = async (profileVisibility: PrivacySettings['profileVisibility']) => { setLocalSettings((current) => ({ ...current, profileVisibility })); await onUpdateSettings({ profileVisibility }); onToast('Profile visibility updated.'); };
+  const createUser = async (event: React.FormEvent) => { event.preventDefault(); if (!draft.displayName.trim() || !draft.username.trim()) return; await onCreateAdminUser({ ...draft, displayName: draft.displayName.trim(), username: draft.username.trim(), status: 'PENDING', avatarKey: 'sapphire' }); setDraft({ displayName: '', username: '', department: 'Computer Science & Engineering', yearOfStudy: 3 }); setShowAddUser(false); };
+  const filteredUsers = adminUsers.filter((member) => `${member.displayName} ${member.username} ${member.department}`.toLowerCase().includes(query.toLowerCase()));
+  const activeMembers = adminUsers.filter((member) => member.status === 'ACTIVE').length;
+  const revenue = transactions.filter((transaction) => transaction.status === 'COMPLETED').reduce((sum, transaction) => sum + transaction.amount, 0);
+  return <main className="settings-page">
+    <header className="settings-heading"><div><span className="settings-kicker">MESH CONTROL</span><h1>Settings</h1><p>Shape your presence, evidence sharing, and the campus workspace.</p></div><div className="settings-tabs" role="tablist"><button type="button" role="tab" aria-selected={activeTab === 'preferences'} className={activeTab === 'preferences' ? 'active' : ''} onClick={() => setActiveTab('preferences')}><Shield size={16} /> Preferences</button><button type="button" role="tab" aria-selected={activeTab === 'admin'} className={activeTab === 'admin' ? 'active' : ''} onClick={() => setActiveTab('admin')}><Users size={16} /> Admin</button></div></header>
+    {activeTab === 'preferences' ? <section className="settings-stack">
+      <Card variant="outlined" className="settings-card"><div className="settings-card-heading"><Globe size={20} /><div><h2>Profile visibility</h2><p>Choose who can find your collaboration profile.</p></div></div><div className="settings-options">{[['CAMPUS', 'Campus', 'Visible to verified students in your campus network.'], ['CONNECTIONS_ONLY', 'Connections', 'Visible after a collaboration connection is accepted.'], ['PRIVATE', 'Private', 'Pause discovery while your current projects stay intact.']].map(([id, title, description]) => <button key={id} type="button" className={`settings-option ${localSettings.profileVisibility === id ? 'selected' : ''}`} onClick={() => setVisibility(id as PrivacySettings['profileVisibility'])}><span><strong>{title}</strong><small>{description}</small></span>{localSettings.profileVisibility === id ? <Check size={18} /> : <ChevronRight size={18} />}</button>)}</div></Card>
+      <Card variant="outlined" className="settings-card"><div className="settings-card-heading"><Lock size={20} /><div><h2>Trust and notifications</h2><p>These choices control the signals MESH can use for collaboration.</p></div></div><div className="settings-toggles">{[['showEmail', 'Show college email', 'Keep contact information available after someone opens your profile.'], ['allowDiscovery', 'Personalized recommendations', 'Use skill complementarity, shared context, and availability in discovery.'], ['githubSyncEnabled', 'GitHub evidence sync', 'Refresh repository, commit, and language signals that you choose to connect.'], ['notifyOnMatch', 'Collaboration requests', 'Receive updates when a peer wants to work together.'], ['notifyOnMessage', 'Project messages', 'Receive updates for messages in active project channels.']].map(([key, title, description]) => <div className="settings-toggle" key={key}><div><strong>{title}</strong><p>{description}</p></div><button type="button" className={localSettings[key as keyof PrivacySettings] ? 'on' : ''} onClick={() => toggle(key as keyof PrivacySettings)} aria-pressed={Boolean(localSettings[key as keyof PrivacySettings])}><span /></button></div>)}</div></Card>
+      <Card variant="outlined" className="settings-card"><div className="settings-card-heading"><GitBranch size={20} /><div><h2>Evidence and project rooms</h2><p>Connect accounts only when you want MESH to use them for supporting evidence or room access.</p></div></div><div className="settings-integrations"><div className="settings-integration"><span className="settings-integration-icon"><GitBranch size={19} /></span><div><strong>GitHub evidence</strong><p>{githubConnection.connected ? `Connected as @${githubConnection.login} · ${githubConnection.publicRepositoryCount} public repositories analyzed.` : 'Connect public repositories to support self-declared skills.'}</p></div><Button variant={githubConnection.connected ? 'tonal' : 'filled'} size="sm" disabled={busy || githubConnection.connected} onClick={onBeginGitHubAuthorization}>{githubConnection.connected ? 'Connected' : 'Connect GitHub'}</Button></div><div className="settings-integration"><span className="settings-integration-icon"><MessageCircle size={19} /></span><div><strong>Discord project rooms</strong><p>{discordConnection.connected ? `Connected as ${discordConnection.globalName || discordConnection.username}. You can join private project rooms.` : 'Link Discord so project owners can grant you access to private team rooms.'}</p></div><Button variant={discordConnection.connected ? 'tonal' : 'outlined'} size="sm" disabled={busy || discordConnection.connected} onClick={onBeginDiscordAuthorization}>{discordConnection.connected ? 'Connected' : 'Connect Discord'}</Button></div><p className="settings-evidence-note">LinkedIn is shown only as a member-submitted profile link or certificate. MESH does not scrape LinkedIn or claim it independently verifies a skill.</p></div></Card>
+      <Card variant="filled" className="settings-session"><div><strong>Account session</strong><p>End this browser session when you are finished.</p></div><Button variant="tonal" icon={<LogOut size={16} />} onClick={onSignOut}>Sign out</Button></Card>
+    </section> : <section className="admin-panel">
+      <div className="admin-intro"><div><span className="settings-kicker">DEMO ADMINISTRATION</span><h2>Campus operations</h2><p>Manage the local demo directory and review its sample ledger. These changes persist in this browser’s mock database.</p></div><Button icon={<UserPlus size={16} />} onClick={() => setShowAddUser(true)}>Add user</Button></div>
+      <div className="admin-metrics"><Card variant="filled"><Users size={20} /><strong>{adminUsers.length}</strong><span>People in directory</span></Card><Card variant="filled"><Check size={20} /><strong>{activeMembers}</strong><span>Active accounts</span></Card><Card variant="filled"><WalletCards size={20} /><strong>₹{revenue}</strong><span>Demo ledger total</span></Card></div>
+      <Card variant="outlined" className="admin-table-card"><div className="admin-table-heading"><div><h3>People</h3><p>{filteredUsers.length} shown from the seeded 100-person network.</p></div><label><span className="sr-only">Find a person</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a person" /></label></div><div className="admin-table" role="table"><div className="admin-row admin-row-header" role="row"><span>Person</span><span>Program</span><span>Evidence</span><span>Status</span><span /></div>{filteredUsers.slice(0, 18).map((member) => <div className="admin-row" role="row" key={member.id}><span><b>{member.displayName}</b><small>@{member.username}</small></span><span>{member.department}<small>Year {member.yearOfStudy}</small></span><span>{member.verifiedSkills} verified skills</span><span><i className={`admin-status ${member.status.toLowerCase()}`}>{member.status.toLowerCase()}</i></span><button type="button" className="admin-delete" onClick={() => onDeleteAdminUser(member.id)} disabled={busy} aria-label={`Delete ${member.displayName}`}><X size={16} /></button></div>)}</div></Card>
+      <Card variant="outlined" className="admin-table-card"><div className="admin-table-heading"><div><h3>Transaction history</h3><p>Sample verification, credit, and subscription entries.</p></div></div><div className="admin-ledger">{transactions.slice(0, 10).map((transaction) => <div className="admin-transaction" key={transaction.id}><span className="admin-transaction-icon"><WalletCards size={16} /></span><div><b>{transaction.description}</b><small>{transaction.userName} · {transaction.createdAt}</small></div><span><b>{transaction.amount === 0 ? 'Free' : `₹${transaction.amount}`}</b><small className={transaction.status.toLowerCase()}>{transaction.status.toLowerCase()}</small></span></div>)}</div></Card>
+      {showAddUser && <div className="admin-modal-backdrop"><form className="admin-modal" onSubmit={createUser}><div><span className="settings-kicker">NEW DIRECTORY MEMBER</span><h3>Add a user</h3><p>Create a local demo account for this browser.</p></div><label>Name<input required value={draft.displayName} onChange={(event) => setDraft({ ...draft, displayName: event.target.value })} placeholder="Aarav Shah" /></label><label>Username<input required value={draft.username} onChange={(event) => setDraft({ ...draft, username: event.target.value })} placeholder="aarav.shah" /></label><label>Department<input value={draft.department} onChange={(event) => setDraft({ ...draft, department: event.target.value })} /></label><label>Year<select value={draft.yearOfStudy} onChange={(event) => setDraft({ ...draft, yearOfStudy: Number(event.target.value) })}>{[1,2,3,4].map((year) => <option key={year} value={year}>Year {year}</option>)}</select></label><div className="admin-modal-actions"><Button variant="text" type="button" onClick={() => setShowAddUser(false)}>Cancel</Button><Button type="submit" disabled={busy}>Add to directory</Button></div></form></div>}
+    </section>}
+  </main>;
 };

@@ -211,6 +211,10 @@ export interface Project {
   slug: string;
   description: string;
   category: string;
+  /** Legacy dashboard metadata; new project forms use tags and openRoles. */
+  department?: string;
+  requiredRoles?: string[];
+  techStack?: string[];
   status: 'PLANNING' | 'ACTIVE' | 'COMPLETED';
   lead: {
     id: string;
@@ -245,3 +249,58 @@ export interface PrivacySettings {
   notifyOnMessage: boolean;
   githubSyncEnabled: boolean;
 }
+
+export interface AdminUser {
+  id: string;
+  displayName: string;
+  username: string;
+  department: string;
+  yearOfStudy: number;
+  status: 'ACTIVE' | 'PENDING' | 'SUSPENDED';
+  verifiedSkills: number;
+  joinedAt: string;
+  avatarKey?: string | null;
+}
+
+export interface AdminTransaction {
+  id: string;
+  userId: string;
+  userName: string;
+  description: string;
+  type: 'VERIFICATION' | 'SUBSCRIPTION' | 'CREDIT' | 'REFUND';
+  amount: number;
+  status: 'COMPLETED' | 'PENDING' | 'REFUNDED';
+  createdAt: string;
+}
+
+export interface OAuthAuthorizationUrl {
+  authorizationUrl: string;
+  expiresAt: string;
+}
+
+export interface GitHubConnectionStatus {
+  connected: boolean;
+  login: string | null;
+  avatarUrl: string | null;
+  publicRepositoryCount: number;
+  authorizedAt: string | null;
+  lastSyncedAt: string | null;
+}
+
+export interface DiscordConnectionStatus {
+  connected: boolean;
+  discordUserId: string | null;
+  username: string | null;
+  globalName: string | null;
+  connectedAt: string | null;
+}
+
+export interface ProjectDiscordRoom {
+  available: boolean;
+  channelId: string | null;
+  inviteUrl: string | null;
+  lastSyncedAt: string | null;
+}
+
+export * from './resources';
+

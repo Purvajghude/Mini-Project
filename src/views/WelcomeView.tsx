@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button, Card, MaterialSymbol } from '../components/m3';
-import { User } from '../types/api';
+import { Profile } from '../types/api';
 
 interface WelcomeViewProps {
-  currentUser: User | null;
+  currentUser: Profile | null;
   onEnterDashboard: () => void;
 }
 
@@ -11,7 +11,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({
   currentUser,
   onEnterDashboard,
 }) => {
-  const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Scholar';
+  const firstName = currentUser?.displayName ? currentUser.displayName.split(' ')[0] : 'Scholar';
 
   return (
     <div

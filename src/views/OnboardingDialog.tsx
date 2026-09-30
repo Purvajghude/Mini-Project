@@ -6,13 +6,12 @@ import {
   ChevronRight,
   Code2,
   ExternalLink,
-  Github,
   Plus,
   Sparkles,
   Trash2,
   User,
 } from 'lucide-react';
-import { Button, Card, Chip, Dialog, TextField, TextArea } from '../components/m3';
+import { Button, Card, Chip, Dialog, Github, TextField, TextArea } from '../components/m3';
 import { Profile, ProfileSkill, Skill } from '../types/api';
 
 interface OnboardingDialogProps {
@@ -147,7 +146,10 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
               />
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Button variant="text" size="sm" onClick={handleFinish} title="Skip wizard and enter dashboard">
+              Skip to Dashboard
+            </Button>
             {step > 1 && (
               <Button variant="outlined" size="sm" onClick={() => setStep((s) => (s - 1) as any)}>
                 Back

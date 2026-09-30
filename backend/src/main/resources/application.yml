@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: mesh-api
+  datasource:
+    url: ${MESH_DATABASE_URL}
+    username: ${MESH_DATABASE_USERNAME}
+    password: ${MESH_DATABASE_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    # Supabase initializes the public schema with platform objects. Baseline at 0 so MESH's V1 migration still runs.
+    baseline-on-migrate: true
+    baseline-version: 0
+server:
+  servlet:
+    context-path: /api/v1
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health
+mesh:
+  web:
+    allowed-origins: ${MESH_ALLOWED_ORIGINS:http://localhost:5173}
+  security:
+    jwt-secret: ${MESH_JWT_SECRET}
+    jwt-ttl-minutes: ${MESH_JWT_TTL_MINUTES:60}
+  github:
+    client-id: ${GITHUB_CLIENT_ID:}
+    client-secret: ${GITHUB_CLIENT_SECRET:}
+    redirect-uri: ${GITHUB_REDIRECT_URI:http://localhost:8080/api/v1/github/callback}
+    success-redirect-uri: ${GITHUB_SUCCESS_REDIRECT_URI:http://localhost:5173/settings?github=connected}
+    error-redirect-uri: ${GITHUB_ERROR_REDIRECT_URI:http://localhost:5173/settings?github=error}
+    max-repositories: ${GITHUB_MAX_REPOSITORIES:20}
+  discord:
+    client-id: ${DISCORD_CLIENT_ID:}
+    client-secret: ${DISCORD_CLIENT_SECRET:}
+    redirect-uri: ${DISCORD_REDIRECT_URI:http://localhost:8080/api/v1/discord/callback}
+    success-redirect-uri: ${DISCORD_SUCCESS_REDIRECT_URI:http://localhost:5173/settings?discord=connected}
+    error-redirect-uri: ${DISCORD_ERROR_REDIRECT_URI:http://localhost:5173/settings?discord=error}
+    bot-token: ${DISCORD_BOT_TOKEN:}
+    guild-id: ${DISCORD_GUILD_ID:}
+    category-id: ${DISCORD_CATEGORY_ID:}

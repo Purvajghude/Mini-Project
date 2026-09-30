@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: mesh-api
+    runtime: java
+    buildCommand: cd backend && mvn -DskipTests package
+    startCommand: java -Dserver.port=$PORT -jar backend/target/mesh-api-0.1.0-SNAPSHOT.jar
+    healthCheckPath: /api/v1/actuator/health
+    envVars:
+      - key: MESH_DATABASE_URL
+        sync: false
+      - key: MESH_DATABASE_USERNAME
+        sync: false
+      - key: MESH_DATABASE_PASSWORD
+        sync: false
+      - key: MESH_JWT_SECRET
+        generateValue: true
+      - key: MESH_ALLOWED_ORIGINS
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_REDIRECT_URI
+        sync: false
+      - key: GITHUB_SUCCESS_REDIRECT_URI
+        sync: false
+      - key: GITHUB_ERROR_REDIRECT_URI
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        sync: false
+      - key: DISCORD_SUCCESS_REDIRECT_URI
+        sync: false
+      - key: DISCORD_ERROR_REDIRECT_URI
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: DISCORD_CATEGORY_ID
+        sync: false

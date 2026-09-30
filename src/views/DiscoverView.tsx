@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Eye,
   Filter,
-  Github,
   RotateCcw,
   Search,
   Sparkles,
@@ -17,7 +16,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { Avatar, Badge, Button, Card, Chip, Dialog, TextField } from '../components/m3';
+import { Avatar, Badge, Button, Card, Chip, Dialog, Github, TextField } from '../components/m3';
 import { CandidateRecommendation, Profile } from '../types/api';
 
 interface DiscoverViewProps {

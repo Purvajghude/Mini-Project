@@ -280,8 +280,8 @@ export const StackedDeck: React.FC<StackedDeckProps> = ({
               <>
                 <Avatar
                   name={currentItem.title}
-                  colorKey={currentItem.avatarKey || 'blue'}
-                  size={72}
+                  tone={currentItem.avatarKey || 'blue'}
+                  size="xl"
                 />
                 <span
                   style={{

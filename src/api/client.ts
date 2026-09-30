@@ -14,6 +14,15 @@ import {
   Skill,
   UpdateProfileRequest,
   AvailabilityPoll,
+  ResourceItem,
+  SavedResource,
+  ResourceProgressStatus,
+  AdminTransaction,
+  AdminUser,
+  DiscordConnectionStatus,
+  GitHubConnectionStatus,
+  OAuthAuthorizationUrl,
+  ProjectDiscordRoom,
 } from '../types/api';
 
 export class ApiError extends Error {
@@ -60,8 +69,28 @@ export interface ApiClient {
   votePollSlot(projectId: string, pollId: string, slotId: string): Promise<AvailabilityPoll>;
   createAvailabilityPoll(projectId: string, poll: Omit<AvailabilityPoll, 'id' | 'voterCount'>): Promise<AvailabilityPoll>;
 
+  // Resources & Learning List
+  getResources(): Promise<ResourceItem[]>;
+  getSavedResources(): Promise<SavedResource[]>;
+  saveResource(resourceId: string, status?: ResourceProgressStatus): Promise<SavedResource[]>;
+  removeSavedResource(resourceId: string): Promise<SavedResource[]>;
+  updateResourceProgress(resourceId: string, status: ResourceProgressStatus): Promise<SavedResource[]>;
+
   getPrivacySettings(): Promise<PrivacySettings>;
   updatePrivacySettings(settings: Partial<PrivacySettings>): Promise<PrivacySettings>;
+
+  // Demo administration
+  getAdminUsers(): Promise<AdminUser[]>;
+  createAdminUser(user: Omit<AdminUser, 'id' | 'joinedAt' | 'verifiedSkills'> & { verifiedSkills?: number }): Promise<AdminUser>;
+  deleteAdminUser(userId: string): Promise<void>;
+  getAdminTransactions(): Promise<AdminTransaction[]>;
+
+  beginGitHubAuthorization(): Promise<OAuthAuthorizationUrl>;
+  getGitHubConnection(): Promise<GitHubConnectionStatus>;
+  beginDiscordAuthorization(): Promise<OAuthAuthorizationUrl>;
+  getDiscordConnection(): Promise<DiscordConnectionStatus>;
+  getProjectDiscordRoom(projectId: string): Promise<ProjectDiscordRoom>;
+  createProjectDiscordRoom(projectId: string): Promise<ProjectDiscordRoom>;
 
   // Session management
   setToken(token: string | null): void;

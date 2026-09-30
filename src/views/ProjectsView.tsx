@@ -8,8 +8,8 @@ import {
   Clock,
   ExternalLink,
   FolderGit2,
-  Github,
   Kanban,
+  MessageCircle,
   MapPin,
   Plus,
   Search,
@@ -17,7 +17,7 @@ import {
   Users,
   Vote,
 } from 'lucide-react';
-import { Avatar, Badge, Button, Card, Chip, Dialog, TextField, TextArea } from '../components/m3';
+import { Avatar, Badge, Button, Card, Chip, Dialog, Github, TextField, TextArea } from '../components/m3';
 import {
   AvailabilityPoll,
   Profile,
@@ -35,6 +35,7 @@ interface ProjectsViewProps {
   onCreateEvent: (projectId: string, event: Omit<ProjectEvent, 'id'>) => Promise<void>;
   onVotePoll: (projectId: string, pollId: string, slotId: string) => Promise<void>;
   onCreatePoll: (projectId: string, poll: Omit<AvailabilityPoll, 'id' | 'voterCount'>) => Promise<void>;
+  onOpenDiscordRoom: (projectId: string) => Promise<void>;
   onToast: (msg: string) => void;
   busy?: boolean;
 }
@@ -56,6 +57,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   onCreateEvent,
   onVotePoll,
   onCreatePoll,
+  onOpenDiscordRoom,
   onToast,
   busy = false,
 }) => {
@@ -353,6 +355,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Button variant="tonal" size="sm" icon={<MessageCircle size={15} />} onClick={() => onOpenDiscordRoom(currentProject.id)}>
+                Open team room
+              </Button>
               {currentProject.githubRepoUrl && (
                 <a
                   href={currentProject.githubRepoUrl}

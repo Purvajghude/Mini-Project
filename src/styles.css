@@ -259,7 +259,7 @@ a {
   background: var(--app-surface);
   color: var(--app-text-muted);
   box-shadow: var(--app-shadow-xs);
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .icon-button:hover {
