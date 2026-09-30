@@ -20,12 +20,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
   error,
 }) => {
   const isRegister = mode === 'register';
+  const useMockDemo = import.meta.env.VITE_USE_MOCK === 'true' || (
+    import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
+  );
 
-  // Pre-fill guaranteed working test credentials
-  const [displayName, setDisplayName] = useState('Purvaj Ghude');
-  const [username, setUsername] = useState('purvaj.builds');
-  const [email, setEmail] = useState('purvaj@university.edu');
-  const [password, setPassword] = useState('password123');
+  const [displayName, setDisplayName] = useState(useMockDemo ? 'Purvaj Ghude' : '');
+  const [username, setUsername] = useState(useMockDemo ? 'purvaj.builds' : '');
+  const [email, setEmail] = useState(useMockDemo ? 'purvaj@university.edu' : '');
+  const [password, setPassword] = useState(useMockDemo ? 'password123' : '');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleInstantSignIn = async () => {
@@ -48,10 +50,15 @@ export const AuthView: React.FC<AuthViewProps> = ({
     e.preventDefault();
     setFieldErrors({});
 
-    const safeEmail = email.trim() || 'purvaj@university.edu';
-    const safePassword = password || 'password123';
-    const safeDisplayName = displayName.trim() || 'Purvaj Ghude';
-    const safeUsername = username.trim() || 'purvaj.builds';
+    const safeEmail = email.trim();
+    const safePassword = password;
+    const safeDisplayName = displayName.trim();
+    const safeUsername = username.trim();
+
+    if (!safeEmail || !safePassword || (isRegister && (!safeDisplayName || !safeUsername))) {
+      setFieldErrors({ form: 'Complete the required fields to continue.' });
+      return;
+    }
 
     if (isRegister) {
       await onSubmit(
@@ -112,8 +119,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         </div>
 
         <Card variant="elevated" style={{ padding: 28 }}>
-          {/* Guaranteed Working Credentials Card */}
-          <div
+          {useMockDemo && <div
             style={{
               marginBottom: 20,
               padding: '16px',
@@ -161,9 +167,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
             >
               1-Click Sign In (Guaranteed Access)
             </Button>
-          </div>
+          </div>}
 
-          {error && (
+          {(error || fieldErrors.form) && (
             <div
               role="alert"
               style={{
@@ -176,11 +182,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 fontWeight: 500,
               }}
             >
-              {error}
+              {error || fieldErrors.form}
             </div>
           )}
 
-          <div
+          {useMockDemo && <div
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -193,7 +199,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
             <div style={{ flex: 1, height: 1, backgroundColor: 'var(--md-sys-color-outline-variant)' }} />
             <span>or sign in manually</span>
             <div style={{ flex: 1, height: 1, backgroundColor: 'var(--md-sys-color-outline-variant)' }} />
-          </div>
+          </div>}
 
           <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {isRegister && (
@@ -275,7 +281,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               </button>
             </div>
 
-            <button
+            {useMockDemo && <button
               type="button"
               onClick={handleResetAndSignIn}
               style={{
@@ -293,7 +299,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
             >
               <RotateCcw size={12} />
               Reset Stored Mock Data & Sign In
-            </button>
+            </button>}
           </div>
         </Card>
       </div>
