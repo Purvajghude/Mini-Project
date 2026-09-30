@@ -167,7 +167,6 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
         <div className="resource-hero-copy">
           <span className="resource-eyebrow">MESH / LEARNING</span>
           <h1>Find your path. <span>Build with people.</span></h1>
-          <p>Follow a clear learning path, keep track of what you know, and find projects where you can put it to work.</p>
           <button type="button" className="resource-browse-link" onClick={() => { setSection('roadmaps'); setQuery(''); requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('resource-directory-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))); }}>Browse all {ROADMAP_DIRECTORY.length} roadmaps <ArrowRight size={14} /></button>
         </div>
         <div className="resource-hero-progress" aria-label={`${percent}% of Frontend topics completed`}>
@@ -189,7 +188,6 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
             <div>
               <span className="resource-eyebrow">ROLE ROADMAP / 01</span>
               <h2 id="frontend-map-title">Frontend developer</h2>
-              <p>Start with the web. Follow the lines as topics branch into tools and specializations.</p>
             </div>
             <div className="resource-workspace-actions">
               <button type="button" className="resource-text-action" onClick={() => toggleSave(frontend)} disabled={busy} aria-pressed={savedMap.has(frontend.id)}>
@@ -268,7 +266,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
 
       {section === 'roadmaps' && !query && (relatedPeople.length > 0 || relatedProjects.length > 0) && (
         <section className="resource-collab-strip">
-          <div><span className="resource-eyebrow">LEARN TOGETHER</span><h2>Put the roadmap to work.</h2><p>These MESH people and projects connect with frontend skills.</p></div>
+          <div><span className="resource-eyebrow">LEARN TOGETHER</span><h2>Put the roadmap to work.</h2></div>
           <div className="resource-collab-items">
             {relatedProjects.map((project) => <button type="button" key={project.id} onClick={() => onNavigateToProject?.(project.id)}><span>PROJECT</span><strong>{project.title}</strong><ArrowRight size={16} /></button>)}
             {relatedPeople.map((person) => <button type="button" key={person.userId} onClick={() => onConnectWithPeer?.(person)}><span>COLLABORATOR</span><strong>{person.displayName}</strong><ArrowRight size={16} /></button>)}
@@ -278,7 +276,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
 
       {section === 'roadmaps' && <section className="resource-directory" aria-labelledby="resource-directory-title">
         <div className="resource-directory-heading">
-          <div><span className="resource-eyebrow">THE DIRECTORY</span><h2 id="resource-directory-title">Every roadmap, one place.</h2><p>Browse {ROADMAP_DIRECTORY.length} official diagrams. Open a path to use its interactive topics and learning links on roadmap.sh.</p></div>
+          <div><span className="resource-eyebrow">THE DIRECTORY</span><h2 id="resource-directory-title">Every roadmap, one place.</h2></div>
           <label className="resource-search"><Search size={17} /><span className="sr-only">Search roadmaps</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a roadmap" type="search" /></label>
         </div>
         <div className="resource-directory-filters" role="group" aria-label="Roadmap categories">
@@ -304,12 +302,12 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
 
       {section === 'build' && <section className="build-x-page" aria-labelledby="build-x-title">
         <header className="build-x-hero">
-          <div><span className="resource-eyebrow">BUILD YOUR OWN X</span><h2 id="build-x-title">Understand the systems you use by rebuilding one.</h2><p>Choose a real system, work through its smallest useful version, and follow the original community-curated resources when you need depth.</p><div className="build-x-actions"><a className="build-x-primary" href="https://github.com/codecrafters-io/build-your-own-x" target="_blank" rel="noopener noreferrer">Open Build Your Own X <ExternalLink size={16} /></a><span>Curated learning paths · direct source links</span></div></div>
+          <div><span className="resource-eyebrow">BUILD YOUR OWN X</span><h2 id="build-x-title">Understand the systems you use by rebuilding one.</h2><div className="build-x-actions"><a className="build-x-primary" href="https://github.com/codecrafters-io/build-your-own-x" target="_blank" rel="noopener noreferrer">Open Build Your Own X <ExternalLink size={16} /></a><span>Curated learning paths · direct source links</span></div></div>
           <aside className="build-x-brief"><span>THE LOOP</span><ol><li><b>Choose a system</b><small>Pick one that stretches a skill you want to prove.</small></li><li><b>Build the core</b><small>Start with the smallest working architecture.</small></li><li><b>Share the evidence</b><small>Connect commits, a demo, and what you learned.</small></li></ol></aside>
         </header>
         <div className="build-x-section-head"><div><span className="resource-eyebrow">STARTER SYSTEMS</span><h2>Make a hard thing tangible.</h2></div><label className="resource-search"><Search size={17} /><span className="sr-only">Search build guides</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a system" type="search" /></label></div>
         <div className="build-x-grid">{buildGuides.filter((guide) => `${guide.title} ${guide.description} ${guide.category}`.toLowerCase().includes(query.toLowerCase())).map((guide, index) => { const saved = savedMap.get(guide.id); return <article className={`build-x-card build-x-card-${index % 5}`} key={guide.id}><div className="build-x-card-top"><span>{String(index + 1).padStart(2, '0')}</span><button type="button" onClick={() => toggleSave(guide)} disabled={busy} aria-label={saved ? `Remove ${guide.title} from learning list` : `Save ${guide.title} to learning list`}><Bookmark size={17} fill={saved ? 'currentColor' : 'none'} /></button></div><div><span className="build-x-category">{guide.category}</span><h3>{guide.title}</h3><p>{guide.description}</p></div><div className="build-x-tech">{guide.technologies.slice(0, 4).map((technology) => <span key={technology}>{technology}</span>)}</div><footer><span>{guide.estimatedTime || '2 weekends'}</span><a href={guide.url} target="_blank" rel="noopener noreferrer">View resources <ArrowRight size={16} /></a></footer></article>; })}</div>
-        <section className="build-x-method"><div><span className="resource-eyebrow">PROJECT METHOD</span><h2>Turn a guide into evidence.</h2><p>Each build becomes a compact portfolio story: problem, architecture, decisions, and a repository with readable commits.</p></div><div className="build-x-method-steps"><article><b>01</b><h3>Scope one core</h3><p>Define the smallest end-to-end behavior before you add features.</p></article><article><b>02</b><h3>Show your decisions</h3><p>Record trade-offs in the README, issues, and pull requests.</p></article><article><b>03</b><h3>Find a collaborator</h3><p>Use MESH to add a complementary skill where the system gets difficult.</p></article></div></section>
+        <section className="build-x-method"><div><span className="resource-eyebrow">PROJECT METHOD</span><h2>Turn a guide into evidence.</h2></div><div className="build-x-method-steps"><article><b>01</b><h3>Scope one core</h3><p>Define the smallest end-to-end behavior before you add features.</p></article><article><b>02</b><h3>Show your decisions</h3><p>Record trade-offs in the README, issues, and pull requests.</p></article><article><b>03</b><h3>Find a collaborator</h3><p>Use MESH to add a complementary skill where the system gets difficult.</p></article></div></section>
       </section>}
 
       {section === 'saved' && <section className="resource-library" aria-labelledby="resource-library-title">
