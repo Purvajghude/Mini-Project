@@ -59,7 +59,8 @@ export class HttpApiAdapter implements ApiClient {
   private token: string | null = null;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = (baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
+    const productionApi = import.meta.env.PROD ? 'https://mesh-api-nzii.onrender.com/api/v1' : '/api/v1';
+    this.baseUrl = (baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? productionApi).replace(/\/$/, '');
   }
 
   setToken(token: string | null): void {

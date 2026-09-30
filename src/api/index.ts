@@ -2,9 +2,11 @@ import { ApiClient } from './client';
 import { HttpApiAdapter } from './httpAdapter';
 import { MockApiAdapter } from './mockAdapter';
 
-// Determine default adapter mode: if VITE_USE_MOCK is explicitly 'false', use HttpApiAdapter;
-// otherwise default to MockApiAdapter for reliable local development & evaluation while backend endpoints are in progress.
-const useMock = import.meta.env.VITE_USE_MOCK !== 'false';
+// Local development keeps the sample adapter unless explicitly connected to a local API.
+// Production defaults to the shared API, with VITE_USE_MOCK=true reserved for isolated previews.
+const useMock = import.meta.env.VITE_USE_MOCK === 'true' || (
+  import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
+);
 
 export const mockAdapter = new MockApiAdapter();
 export const httpAdapter = new HttpApiAdapter();
