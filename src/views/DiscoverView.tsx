@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronRight, Search, ShieldCheck, Sparkles, UserRoundPlus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronRight, Copy, ExternalLink, MessageCircle, Search, ShieldCheck, Sparkles, UserRoundPlus, X } from 'lucide-react';
 import { Avatar, Button, Card, Chip, Github, TextField } from '../components/m3';
 import { CandidateRecommendation, Profile } from '../types/api';
 import './DiscoverView.css';
@@ -76,16 +76,106 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({ currentUser, recomme
           {[2, 1].map((offset) => { const card = candidates[(selectedIndex + offset) % candidates.length]; return !card || candidates.length <= offset ? null : <div key={card.userId} className={`discover-deck-shadow deck-shadow-${offset}`} />; })}
           <article className="discover-active-card">
             <div className="discover-card-banner"><span>Recommended for you</span><strong>{Math.round(selected.score)}% fit</strong></div>
-            <div className="discover-person-row"><Avatar name={selected.displayName} tone={selected.avatarKey} size="xl" online /><div><h2>{selected.displayName}</h2><p>@{selected.username} · {selected.department || 'Student collaborator'}</p><span>{selected.yearOfStudy ? `Year ${selected.yearOfStudy}` : 'Campus network'} · {selected.primaryDomain || 'Open to collaborate'}</span></div></div>
+            <div className="discover-person-row"><Avatar name={selected.displayName} tone={selected.avatarKey} size="xl" online /><div><h2>{selected.displayName}</h2><p>@{selected.username} · {selected.department || 'Student collaborator'}</p><span>{selected.yearOfStudy ? `Year ${selected.yearOfStudy}` : 'Campus network'} · {selected.primaryDomain || 'Open to collaborate'}</span>{selected.discordId && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#5865F2', fontWeight: 600, marginTop: 3 }}><MessageCircle size={12} /> Discord: {selected.discordId}</span>}</div></div>
             <p className="discover-reason">{selected.reason}</p>
             <div className="discover-skill-list">{skillsToShow.slice(0, 4).map((skill) => <span key={skill}>{skill}</span>)}</div>
-            <div className="discover-card-actions"><Button variant="text" size="sm" icon={<X size={16} />} disabled={busy} onClick={pass}>Pass</Button><Button variant="tonal" size="sm" icon={selected.savedForLater ? <BookmarkCheck size={16} /> : <Bookmark size={16} />} disabled={busy} onClick={save}>{selected.savedForLater ? 'Saved' : 'Save'}</Button><Button variant={selected.status === 'interested' ? 'tonal' : 'filled'} size="sm" icon={selected.status === 'interested' ? <Check size={16} /> : <UserRoundPlus size={16} />} disabled={busy || selected.status === 'interested'} onClick={connect}>{selected.status === 'interested' ? 'Request sent' : 'Connect'}</Button></div>
+            <div className="discover-card-actions">
+              <Button variant="text" size="sm" icon={<X size={16} />} disabled={busy} onClick={pass}>Pass</Button>
+              <Button variant="tonal" size="sm" icon={selected.savedForLater ? <BookmarkCheck size={16} /> : <Bookmark size={16} />} disabled={busy} onClick={save}>{selected.savedForLater ? 'Saved' : 'Save'}</Button>
+              {selected.discordId && (
+                <a
+                  href={`discord://users/${selected.discordId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Direct Message ${selected.displayName} on Discord (${selected.discordId})`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    borderRadius: 'var(--md-sys-shape-corner-full)',
+                    backgroundColor: '#5865F2',
+                    color: '#FFFFFF',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    lineHeight: 1,
+                  }}
+                >
+                  <MessageCircle size={14} />
+                  <span>DM on Discord</span>
+                </a>
+              )}
+              <Button variant={selected.status === 'interested' ? 'tonal' : 'filled'} size="sm" icon={selected.status === 'interested' ? <Check size={16} /> : <UserRoundPlus size={16} />} disabled={busy || selected.status === 'interested'} onClick={connect}>{selected.status === 'interested' ? 'Request sent' : 'Connect'}</Button>
+            </div>
           </article>
         </div>
         <div className="discover-deck-navigation"><Button variant="text" size="sm" icon={<ArrowLeft size={17} />} onClick={() => next(-1)}>Previous</Button><div className="discover-progress" aria-label={`Recommendation ${selectedIndex + 1} of ${candidates.length}`}>{candidates.slice(0, 6).map((candidate) => <button key={candidate.userId} type="button" className={candidate.userId === selected.userId ? 'active' : ''} aria-label={`View ${candidate.displayName}`} onClick={() => setSelectedId(candidate.userId)} />)}</div><Button variant="text" size="sm" trailingIcon={<ArrowRight size={17} />} onClick={() => next(1)}>Next</Button></div>
       </div>
 
-      <aside className="discover-dossier"><div className="discover-dossier-label"><Sparkles size={16} /> Why this is a fit</div><h3>{selected.displayName} fills a useful gap in your team.</h3><p>{selected.bio || 'This student has made a collaboration profile and is open to working with compatible peers.'}</p><div className="discover-score-list">{scoreParts(selected).map((part) => <div key={part.label}><div><span>{part.label}</span><strong>{Math.round(part.value)}%</strong></div><span className="discover-score-track"><i style={{ width: `${Math.max(0, Math.min(100, part.value))}%` }} /></span></div>)}</div><div className="discover-evidence"><Github size={17} /><div><strong>Evidence-aware matching</strong></div></div></aside>
+      <aside className="discover-dossier">
+        <div className="discover-dossier-label"><Sparkles size={16} /> Why this is a fit</div>
+        <h3>{selected.displayName} fills a useful gap in your team.</h3>
+        <p>{selected.bio || 'This student has made a collaboration profile and is open to working with compatible peers.'}</p>
+        <div className="discover-score-list">{scoreParts(selected).map((part) => <div key={part.label}><div><span>{part.label}</span><strong>{Math.round(part.value)}%</strong></div><span className="discover-score-track"><i style={{ width: `${Math.max(0, Math.min(100, part.value))}%` }} /></span></div>)}</div>
+        {selected.discordId && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--md-sys-shape-corner-medium)', backgroundColor: 'rgba(88, 101, 242, 0.08)', border: '1px solid rgba(88, 101, 242, 0.22)', marginTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageCircle size={18} color="#5865F2" />
+              <div>
+                <strong style={{ fontSize: 13, display: 'block', color: 'var(--md-sys-color-on-surface)' }}>Discord User ID</strong>
+                <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>{selected.discordId}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(selected.discordId!);
+                  onToast(`Copied ${selected.displayName}'s Discord ID (${selected.discordId})`);
+                }}
+                title="Copy Discord ID"
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--md-sys-color-outline-variant)',
+                  borderRadius: 'var(--md-sys-shape-corner-extra-small)',
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  color: 'var(--md-sys-color-on-surface)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <Copy size={12} />
+                Copy
+              </button>
+              <a
+                href={`discord://users/${selected.discordId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 10px',
+                  borderRadius: 'var(--md-sys-shape-corner-extra-small)',
+                  backgroundColor: '#5865F2',
+                  color: '#FFFFFF',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Open DM <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+        )}
+        <div className="discover-evidence"><Github size={17} /><div><strong>Evidence-aware matching</strong></div></div>
+      </aside>
     </section>}
 
     {candidates.length > 1 && <section className="discover-enter discover-rail" aria-labelledby="discover-rail-title"><div className="discover-rail-heading"><h2 id="discover-rail-title">Keep exploring</h2><span>{candidates.length} relevant people</span></div><div className="discover-rail-list">{candidates.slice(0, 6).map((candidate) => <button type="button" key={candidate.userId} className={candidate.userId === selected?.userId ? 'selected' : ''} onClick={() => setSelectedId(candidate.userId)}><Avatar name={candidate.displayName} tone={candidate.avatarKey} size="sm" /><span><strong>{candidate.displayName}</strong><small>{candidate.primaryDomain || 'Collaborator'}</small></span><ChevronRight size={16} /></button>)}</div></section>}

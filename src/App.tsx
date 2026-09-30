@@ -12,10 +12,13 @@ import {
 import { api } from './api/index';
 import {
   Avatar,
+  Button,
+  Dialog,
   NavigationBar,
   NavigationRail,
   NavDestination,
   Snackbar,
+  TextField,
 } from './components/m3';
 import {
   CandidateRecommendation,
@@ -94,6 +97,8 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [discordGateCandidate, setDiscordGateCandidate] = useState<CandidateRecommendation | null>(null);
+  const [discordGateInput, setDiscordGateInput] = useState('');
 
   const toast = (msg: string) => {
     setNotice(msg);
@@ -225,9 +230,15 @@ export default function App() {
   ) => {
     setBusy(true);
     try {
-      await api.replaceSkills({
-        skills: newSkills.map((s) => ({ skillId: s.id, proficiency: s.proficiency })),
-      });
+      if (newSkills && newSkills.length > 0) {
+        try {
+          await api.replaceSkills({
+            skills: newSkills.map((s) => ({ skillId: s.id, proficiency: s.proficiency })),
+          });
+        } catch (skillErr: any) {
+          console.warn('Skill sync error during onboarding:', skillErr);
+        }
+      }
       const updated = await api.updateProfile({
         displayName: user?.displayName || 'Student',
         ...profileUpdates,
@@ -255,6 +266,15 @@ export default function App() {
   };
 
   const handleConnect = async (candidate: CandidateRecommendation) => {
+    if (!user?.discordId) {
+      setDiscordGateCandidate(candidate);
+      setDiscordGateInput('');
+      return;
+    }
+    await proceedConnect(candidate);
+  };
+
+  const proceedConnect = async (candidate: CandidateRecommendation) => {
     setBusy(true);
     try {
       const res = await api.sendInterest(candidate.userId);
@@ -273,6 +293,38 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleSaveDiscordAndConnect = async () => {
+    if (!discordGateCandidate) return;
+    const trimmed = discordGateInput.trim();
+    if (!trimmed) {
+      toast('Please enter your numeric Discord User ID to proceed.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await api.updateProfile({
+        displayName: user?.displayName || 'Student',
+        discordId: trimmed,
+      });
+      setUser(updated);
+      toast('Discord ID saved to your profile.');
+      const candidate = discordGateCandidate;
+      setDiscordGateCandidate(null);
+      await proceedConnect(candidate);
+    } catch (err: any) {
+      toast(err.message || 'Could not save Discord ID.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSkipDiscordAndConnect = async () => {
+    if (!discordGateCandidate) return;
+    const candidate = discordGateCandidate;
+    setDiscordGateCandidate(null);
+    await proceedConnect(candidate);
   };
 
   const handlePass = async (candidateId: string) => {
@@ -833,6 +885,36 @@ export default function App() {
           busy={busy}
         />
       )}
+
+      {/* Discord Connect Gate Dialog */}
+      <Dialog
+        open={Boolean(discordGateCandidate)}
+        onClose={() => setDiscordGateCandidate(null)}
+        headline="Connect via Discord"
+        actions={
+          <>
+            <Button variant="text" onClick={handleSkipDiscordAndConnect}>
+              Connect without Discord
+            </Button>
+            <Button variant="filled" onClick={handleSaveDiscordAndConnect} loading={busy}>
+              Save &amp; Connect
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--md-sys-color-on-surface-variant)' }}>
+            Adding your Discord ID makes it easy for {discordGateCandidate?.displayName || 'peers'} to direct message you when collaborating on projects.
+          </p>
+          <TextField
+            label="Your Discord User ID"
+            value={discordGateInput}
+            onChange={(e) => setDiscordGateInput(e.target.value)}
+            placeholder="e.g. 712398492019485712"
+            supportingText="Numeric Discord User ID (Enable Developer Mode in Discord → Right-click profile → Copy User ID)"
+          />
+        </div>
+      </Dialog>
 
       {/* Global Snackbar */}
       <Snackbar message={notice} onDismiss={() => setNotice(null)} />
