@@ -55,6 +55,8 @@ import Landing from './pages/Landing.jsx';
 // Existing views placeholder for Milestone 3, 4, 5
 import TeamBuilder from './components/TeamBuilder.jsx';
 
+const DISCORD_COMMUNITY_URL = import.meta.env.VITE_DISCORD_COMMUNITY_URL || 'https://discord.com/channels/1554691162999099392';
+
 export default function App() {
   const [auth, setAuth] = useState<{ token: string; demo: boolean } | null>(() => {
     try {
@@ -322,7 +324,7 @@ export default function App() {
     setBusy(true);
     try {
       const res = await api.acceptInterest(requestId);
-      toast('Collaboration request accepted! Channel provisioned.');
+      toast('Collaboration request accepted. You can now coordinate in Discord.');
       const [newRequests, newMatches] = await Promise.all([
         api.getIncomingInterests(),
         api.getMatches(),
@@ -509,6 +511,10 @@ export default function App() {
       if (!room.inviteUrl) throw new Error('The Discord room could not provide an invite link.');
       window.open(room.inviteUrl, '_blank', 'noopener,noreferrer');
     } catch (err: any) { toast(err.message || 'Could not open the Discord project room.'); }
+  };
+
+  const handleOpenDiscordCommunity = () => {
+    window.open(DISCORD_COMMUNITY_URL, '_blank', 'noopener,noreferrer');
   };
 
   // Destinations for M3 Navigation
@@ -719,8 +725,10 @@ export default function App() {
             <ProfileView
               user={user}
               availableSkills={skills}
+              githubConnection={githubConnection}
               onSaveProfile={handleSaveProfile}
               onSaveSkills={handleSaveSkills}
+              onBeginGitHubAuthorization={handleBeginGitHubAuthorization}
               onToast={toast}
               busy={busy}
             />
@@ -762,7 +770,8 @@ export default function App() {
               currentUser={user}
               matches={matches}
               incomingRequests={requests}
-              onSendMessage={handleSendMessage}
+              discordConnection={discordConnection}
+              onOpenDiscordCommunity={handleOpenDiscordCommunity}
               onAcceptRequest={handleAcceptRequest}
               onDeclineRequest={handleDeclineRequest}
               onToast={toast}

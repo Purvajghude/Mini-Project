@@ -10,7 +10,6 @@ import {
   ExternalLink,
   GitBranch,
   Plus,
-  RefreshCw,
   Sparkles,
   Star,
   Trash2,
@@ -18,13 +17,15 @@ import {
   X,
 } from 'lucide-react';
 import { Avatar, Badge, Button, Card, Chip, Dialog, Github, TextField, TextArea } from '../components/m3';
-import { GitHubEvidence, Profile, ProfileSkill, Skill, UpdateProfileRequest } from '../types/api';
+import { GitHubConnectionStatus, Profile, ProfileSkill, Skill, UpdateProfileRequest } from '../types/api';
 
 interface ProfileViewProps {
   user: Profile;
   availableSkills: Skill[];
+  githubConnection: GitHubConnectionStatus;
   onSaveProfile: (updates: UpdateProfileRequest) => Promise<void>;
   onSaveSkills: (skills: ProfileSkill[]) => Promise<void>;
+  onBeginGitHubAuthorization: () => Promise<void>;
   onToast: (message: string) => void;
   busy?: boolean;
 }
@@ -32,8 +33,10 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   availableSkills,
+  githubConnection,
   onSaveProfile,
   onSaveSkills,
+  onBeginGitHubAuthorization,
   onToast,
   busy = false,
 }) => {
@@ -53,53 +56,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [selectedCatalogSkillId, setSelectedCatalogSkillId] = useState<number | ''>('');
   const [newSkillProficiency, setNewSkillProficiency] = useState<number>(3);
   const [skillsModified, setSkillsModified] = useState(false);
-
-  // Simulated GitHub evidence
-  const [githubEvidence, setGithubEvidence] = useState<GitHubEvidence>({
-    connected: true,
-    githubUsername: 'purvajghude',
-    verifiedCommits: 384,
-    topLanguages: [
-      { language: 'TypeScript', percentage: 48 },
-      { language: 'Java', percentage: 28 },
-      { language: 'Python', percentage: 16 },
-      { language: 'CSS/HTML', percentage: 8 },
-    ],
-    pinnedRepos: [
-      {
-        name: 'mesh-connect-platform',
-        description: 'Academic student peer matching and skill collaboration system built with React, Vite, and Spring Boot.',
-        stars: 42,
-        forks: 11,
-        primaryLanguage: 'TypeScript',
-        updatedAt: 'Today',
-        verified: true,
-        commitsCount: 198,
-      },
-      {
-        name: 'campus-event-sync',
-        description: 'University calendar scheduler with transactional time-slot locking and notification worker.',
-        stars: 19,
-        forks: 5,
-        primaryLanguage: 'Java',
-        updatedAt: '3 days ago',
-        verified: true,
-        commitsCount: 94,
-      },
-      {
-        name: 'a11y-design-tokens',
-        description: 'WCAG AAA accessible Material Design 3 token spec generator for educational dashboards.',
-        stars: 15,
-        forks: 3,
-        primaryLanguage: 'CSS',
-        updatedAt: '1 week ago',
-        verified: true,
-        commitsCount: 46,
-      },
-    ],
-    lastSyncedAt: 'Just now',
-  });
-  const [syncingGithub, setSyncingGithub] = useState(false);
 
   // Collaboration interests / goals
   const [goals, setGoals] = useState<string[]>([
@@ -157,18 +113,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     onToast('Skills updated! Recommendations will now reflect your changes.');
   };
 
-  const handleSyncGithub = async () => {
-    setSyncingGithub(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setGithubEvidence((prev) => ({
-      ...prev,
-      verifiedCommits: prev.verifiedCommits + 2,
-      lastSyncedAt: 'Just now',
-    }));
-    setSyncingGithub(false);
-    onToast('GitHub repositories & commit telemetry refreshed.');
-  };
-
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGoal.trim()) return;
@@ -186,7 +130,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const hasBio = Boolean(user.bio && user.bio.trim().length > 20);
   const hasMinSkills = currentSkills.length >= 3;
   const hasAvailability = Boolean(user.availability);
-  const hasGithub = githubEvidence.connected;
+  const hasGithub = githubConnection.connected;
 
   const healthScore =
     (hasBio ? 25 : 0) +
@@ -493,117 +437,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 GitHub Evidence
               </h2>
             </div>
-            <Button
-              variant="tonal"
-              size="sm"
-              icon={<RefreshCw size={13} className={syncingGithub ? 'm3-spin' : ''} />}
-              onClick={handleSyncGithub}
-              loading={syncingGithub}
-            >
-              Sync
+            <Button variant={githubConnection.connected ? 'tonal' : 'filled'} size="sm" onClick={onBeginGitHubAuthorization} disabled={busy || githubConnection.connected}>
+              {githubConnection.connected ? 'Connected' : 'Connect GitHub'}
             </Button>
           </div>
-
-          <div
-            style={{
-              padding: '12px 14px',
-              borderRadius: 'var(--md-sys-shape-corner-small)',
-              backgroundColor: 'var(--md-sys-color-surface-container)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <span style={{ fontSize: 11, color: 'var(--md-sys-color-on-surface-variant)', textTransform: 'uppercase', fontWeight: 650 }}>
-                Verified Commits
-              </span>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--md-sys-color-primary)' }}>
-                {githubEvidence.verifiedCommits}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: 11, color: 'var(--md-sys-color-on-surface-variant)', textTransform: 'uppercase', fontWeight: 650 }}>
-                Handle
-              </span>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>
-                <a
-                  href={`https://github.com/${githubEvidence.githubUsername}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--md-sys-color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                >
-                  @{githubEvidence.githubUsername}
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-            </div>
+          <div style={{ padding: '18px', borderRadius: 'var(--md-sys-shape-corner-medium)', backgroundColor: 'var(--md-sys-color-surface-container-low)' }}>
+            {githubConnection.connected ? <>
+              <strong style={{ display: 'block', color: 'var(--md-sys-color-on-surface)', fontSize: 16 }}>@{githubConnection.login}</strong>
+              <p style={{ margin: '5px 0 0', color: 'var(--md-sys-color-on-surface-variant)', fontSize: 13, lineHeight: 1.55 }}>MESH has read {githubConnection.publicRepositoryCount} public repositories to look for language evidence that supports your self-declared skills.</p>
+              <span style={{ display: 'block', marginTop: 12, color: 'var(--md-sys-color-primary)', fontSize: 12, fontWeight: 700 }}>Connection active{githubConnection.lastSyncedAt ? ` · synced ${new Date(githubConnection.lastSyncedAt).toLocaleDateString()}` : ''}</span>
+            </> : <>
+              <strong style={{ display: 'block', color: 'var(--md-sys-color-on-surface)', fontSize: 16 }}>Add supporting GitHub evidence</strong>
+              <p style={{ margin: '5px 0 0', color: 'var(--md-sys-color-on-surface-variant)', fontSize: 13, lineHeight: 1.55 }}>Linking GitHub lets MESH compare public repository languages with the skills you declared. It does not invent credentials or inspect private work.</p>
+            </>}
           </div>
-
-          {/* Top Languages bar */}
-          <div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--md-sys-color-on-surface-variant)' }}>
-              Language Activity Distribution
-            </span>
-            <div
-              style={{
-                height: 8,
-                borderRadius: 'var(--md-sys-shape-corner-full)',
-                display: 'flex',
-                overflow: 'hidden',
-                marginTop: 6,
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ width: '48%', backgroundColor: '#3178c6' }} title="TypeScript 48%" />
-              <div style={{ width: '28%', backgroundColor: '#b07219' }} title="Java 28%" />
-              <div style={{ width: '16%', backgroundColor: '#3572A5' }} title="Python 16%" />
-              <div style={{ width: '8%', backgroundColor: '#563d7c' }} title="CSS/HTML 8%" />
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: 'var(--md-sys-color-on-surface-variant)' }}>
-              {githubEvidence.topLanguages.map((l) => (
-                <span key={l.language} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--md-sys-color-primary)' }} />
-                  {l.language}: {l.percentage}%
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Pinned Repositories */}
-          <div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--md-sys-color-on-surface-variant)', marginBottom: 8, display: 'block' }}>
-              Pinned Repositories &amp; Contributions
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {githubEvidence.pinnedRepos.map((repo) => (
-                <div
-                  key={repo.name}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 'var(--md-sys-shape-corner-extra-small)',
-                    backgroundColor: 'var(--md-sys-color-surface-container-low)',
-                    border: '1px solid var(--md-sys-color-outline-variant)',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: 13, color: 'var(--md-sys-color-primary)' }}>{repo.name}</strong>
-                    <span style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                      <Star size={12} /> {repo.stars}
-                    </span>
-                  </div>
-                  <p style={{ margin: '4px 0 6px 0', fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    {repo.description}
-                  </p>
-                  <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--md-sys-color-outline)' }}>
-                    <span>{repo.primaryLanguage}</span>
-                    <span>{repo.commitsCount} commits</span>
-                    <span>Updated {repo.updatedAt}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p style={{ margin: 0, color: 'var(--md-sys-color-on-surface-variant)', fontSize: 12, lineHeight: 1.5 }}>Your score and recommendations use the evidence available to the platform. You remain in control of whether to connect GitHub.</p>
         </Card>
       </div>
 
