@@ -9,6 +9,7 @@ import {
   Edit3,
   ExternalLink,
   GitBranch,
+  MessageSquare,
   Plus,
   Sparkles,
   Star,
@@ -48,6 +49,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     bio: user.bio || '',
     availability: user.availability || '',
     primaryDomain: user.primaryDomain || '',
+    discordId: user.discordId || '',
   });
 
   // Skills state
@@ -199,6 +201,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <span>{user.primaryDomain}</span>
                   </span>
                 )}
+                {user.discordId && (
+                  <a
+                    href={`discord://users/${user.discordId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                      borderRadius: 'var(--md-sys-shape-corner-full)',
+                      backgroundColor: 'rgba(88, 101, 242, 0.15)',
+                      color: '#5865F2',
+                      border: '1px solid rgba(88, 101, 242, 0.3)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                    title={`Open Discord profile (${user.discordId})`}
+                  >
+                    <MessageSquare size={14} />
+                    <span>Discord: {user.discordId}</span>
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -214,6 +240,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 bio: user.bio || '',
                 availability: user.availability || '',
                 primaryDomain: user.primaryDomain || '',
+                discordId: user.discordId || '',
               });
               setIsEditingProfile(true);
             }}
@@ -539,6 +566,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             value={profileForm.availability || ''}
             onChange={(e) => setProfileForm({ ...profileForm, availability: e.target.value })}
             placeholder="e.g. 6–8 hrs / week"
+          />
+
+          <TextField
+            label="Discord User ID"
+            value={profileForm.discordId || ''}
+            onChange={(e) => setProfileForm({ ...profileForm, discordId: e.target.value })}
+            placeholder="e.g. 712398492019485712"
+            supportingText="Numeric Discord User ID for direct peer DMs (Enable Developer Mode in Discord → Right-click profile → Copy User ID)"
           />
 
           <TextArea

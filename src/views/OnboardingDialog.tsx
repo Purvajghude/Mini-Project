@@ -61,17 +61,25 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
   // Step 2: Skills
   const [selectedSkills, setSelectedSkills] = useState<ProfileSkill[]>(() => {
     if (profile.skills && profile.skills.length > 0) return [...profile.skills];
-    // Default 3 starter skills
+    if (availableSkills && availableSkills.length > 0) {
+      const preferred = ['React', 'TypeScript', 'PostgreSQL'];
+      const matched = availableSkills
+        .filter((s) => preferred.includes(s.name))
+        .map((s) => ({ ...s, proficiency: 3, evidenceSupported: false }));
+      if (matched.length > 0) return matched;
+      return availableSkills.slice(0, 3).map((s) => ({ ...s, proficiency: 3, evidenceSupported: false }));
+    }
     return [
-      { id: 1, name: 'React', category: 'Frontend', proficiency: 4, evidenceSupported: false },
-      { id: 2, name: 'TypeScript', category: 'Languages', proficiency: 3, evidenceSupported: false },
-      { id: 7, name: 'PostgreSQL', category: 'Database', proficiency: 3, evidenceSupported: false },
+      { id: 5, name: 'React', category: 'Frontend', proficiency: 4, evidenceSupported: false },
+      { id: 6, name: 'TypeScript', category: 'Frontend', proficiency: 3, evidenceSupported: false },
+      { id: 3, name: 'PostgreSQL', category: 'Data', proficiency: 3, evidenceSupported: false },
     ];
   });
   const [skillSearch, setSkillSearch] = useState('');
 
-  // Step 3: Availability & Bio
+  // Step 3: Availability, Bio & Discord
   const [availability, setAvailability] = useState(profile.availability || '8–10 hrs / week');
+  const [discordId, setDiscordId] = useState(profile.discordId || '');
   const [bio, setBio] = useState(
     profile.bio ||
       'Interested in building practical student tools and joining collaborative university projects.'
@@ -107,6 +115,7 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
         primaryDomain,
         availability,
         bio,
+        discordId: discordId.trim() || undefined,
         onboardingComplete: true,
       },
       selectedSkills
@@ -390,6 +399,14 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
               onChange={(e) => setAvailability(e.target.value)}
               placeholder="e.g. 8–10 hrs / week, Weekends only, etc."
               supportingText="Used for schedule matching and sprint capacity."
+            />
+
+            <TextField
+              label="Discord User ID (For Direct Peer DMs)"
+              value={discordId}
+              onChange={(e) => setDiscordId(e.target.value)}
+              placeholder="e.g. 712398492019485712"
+              supportingText="Enter your 17–19 digit numeric Discord ID (Enable Developer Mode in Discord → Right-click profile → Copy User ID). This allows matched peers to message you directly."
             />
 
             <TextArea
