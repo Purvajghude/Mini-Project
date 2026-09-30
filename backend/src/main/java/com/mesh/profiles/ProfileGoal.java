@@ -12,6 +12,7 @@ public class ProfileGoal {
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "goal_code", insertable = false, updatable = false) private CollaborationGoal goal;
     protected ProfileGoal() { }
     public ProfileGoal(UUID profileUserId, String goalCode) { this.profileUserId = profileUserId; this.goalCode = goalCode; }
+    public ProfileGoal(UUID profileUserId, String goalCode, CollaborationGoal goal) { this.profileUserId = profileUserId; this.goalCode = goalCode; this.goal = goal; }
     public UUID getProfileUserId() { return profileUserId; }
     public CollaborationGoal getGoal() { return goal; }
 }

@@ -22,7 +22,10 @@ public class SecurityConfig {
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
     @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwt, ApiAuthenticationEntryPoint entryPoint, ApiAccessDeniedHandler accessDeniedHandler) throws Exception {
         return http.csrf(csrf -> csrf.disable()).cors(cors -> { }).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**", "/github/callback", "/discord/callback", "/actuator/health").permitAll().anyRequest().authenticated())
+            .authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                .requestMatchers("/auth/**", "/github/callback", "/discord/callback", "/actuator/health", "/error").permitAll()
+                .anyRequest().authenticated())
             .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDeniedHandler))
             .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class).build();
     }

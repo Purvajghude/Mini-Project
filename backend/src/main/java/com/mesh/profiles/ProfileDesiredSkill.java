@@ -13,6 +13,7 @@ public class ProfileDesiredSkill {
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "skill_id", insertable = false, updatable = false) private Skill skill;
     protected ProfileDesiredSkill() { }
     public ProfileDesiredSkill(UUID profileUserId, Long skillId) { this.profileUserId = profileUserId; this.skillId = skillId; }
+    public ProfileDesiredSkill(UUID profileUserId, Long skillId, Skill skill) { this.profileUserId = profileUserId; this.skillId = skillId; this.skill = skill; }
     public UUID getProfileUserId() { return profileUserId; }
     public Skill getSkill() { return skill; }
 }

@@ -60,6 +60,11 @@ public class ApiExceptionHandler {
         return response(HttpStatus.BAD_REQUEST, "Request validation failed.", fields, request);
     }
 
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ErrorResponse> handleGeneric(Exception exception, HttpServletRequest request) {
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage() != null && !exception.getMessage().isBlank() ? exception.getMessage() : "An unexpected server error occurred.", Map.of(), request);
+    }
+
     private ResponseEntity<ErrorResponse> response(HttpStatus status, String message, Map<String, String> fields, HttpServletRequest request) {
         return ResponseEntity.status(status).body(new ErrorResponse(Instant.now(), status.value(), status.getReasonPhrase(), message, fields, request.getRequestURI()));
     }

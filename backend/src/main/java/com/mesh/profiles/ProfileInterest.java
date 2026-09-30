@@ -12,6 +12,7 @@ public class ProfileInterest {
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "interest_id", insertable = false, updatable = false) private Interest interest;
     protected ProfileInterest() { }
     public ProfileInterest(UUID profileUserId, Long interestId) { this.profileUserId = profileUserId; this.interestId = interestId; }
+    public ProfileInterest(UUID profileUserId, Long interestId, Interest interest) { this.profileUserId = profileUserId; this.interestId = interestId; this.interest = interest; }
     public UUID getProfileUserId() { return profileUserId; }
     public Interest getInterest() { return interest; }
 }

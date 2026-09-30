@@ -67,10 +67,13 @@ public class ProfileService {
 
     @Transactional
     public ProfileResponse replaceSkills(UUID userId, ReplaceSkillsRequest request) {
-        assertExistingSkillIds(request.skills().stream().map(SkillSelection::skillId).toList());
+        List<Long> skillIds = request.skills().stream().map(SkillSelection::skillId).toList();
+        assertExistingSkillIds(skillIds);
+        Map<Long, Skill> skillMap = skills.findAllById(skillIds).stream().collect(Collectors.toMap(Skill::getId, Function.identity()));
         profileSkills.deleteByProfileUserId(userId);
         profileSkills.flush();
-        request.skills().forEach(selection -> profileSkills.save(new ProfileSkill(userId, selection.skillId(), selection.proficiency())));
+        request.skills().forEach(selection -> profileSkills.save(new ProfileSkill(userId, selection.skillId(), skillMap.get(selection.skillId()), selection.proficiency())));
+        profileSkills.flush();
         return response(requireProfile(userId));
     }
 
@@ -78,10 +81,13 @@ public class ProfileService {
     public ProfileResponse replaceGoals(UUID userId, ReplaceGoalsRequest request) {
         requireProfile(userId);
         List<String> codes = distinctCodes(request.goalCodes(), "goal");
-        if (goals.findAllById(codes).size() != codes.size()) throw new ApiException(HttpStatus.BAD_REQUEST, "One or more goal codes do not exist.");
+        List<CollaborationGoal> goalList = goals.findAllById(codes);
+        if (goalList.size() != codes.size()) throw new ApiException(HttpStatus.BAD_REQUEST, "One or more goal codes do not exist.");
+        Map<String, CollaborationGoal> goalMap = goalList.stream().collect(Collectors.toMap(CollaborationGoal::getCode, Function.identity()));
         profileGoals.deleteByProfileUserId(userId);
         profileGoals.flush();
-        codes.forEach(code -> profileGoals.save(new ProfileGoal(userId, code)));
+        codes.forEach(code -> profileGoals.save(new ProfileGoal(userId, code, goalMap.get(code))));
+        profileGoals.flush();
         return response(requireProfile(userId));
     }
 
@@ -89,9 +95,11 @@ public class ProfileService {
     public ProfileResponse replaceInterests(UUID userId, ReplaceInterestsRequest request) {
         requireProfile(userId);
         assertExistingInterestIds(request.interestIds());
+        Map<Long, Interest> interestMap = interests.findAllById(request.interestIds()).stream().collect(Collectors.toMap(Interest::getId, Function.identity()));
         profileInterests.deleteByProfileUserId(userId);
         profileInterests.flush();
-        request.interestIds().forEach(id -> profileInterests.save(new ProfileInterest(userId, id)));
+        request.interestIds().forEach(id -> profileInterests.save(new ProfileInterest(userId, id, interestMap.get(id))));
+        profileInterests.flush();
         return response(requireProfile(userId));
     }
 
@@ -99,9 +107,11 @@ public class ProfileService {
     public ProfileResponse replaceDesiredSkills(UUID userId, ReplaceDesiredSkillsRequest request) {
         requireProfile(userId);
         assertExistingSkillIds(request.skillIds());
+        Map<Long, Skill> skillMap = skills.findAllById(request.skillIds()).stream().collect(Collectors.toMap(Skill::getId, Function.identity()));
         desiredSkills.deleteByProfileUserId(userId);
         desiredSkills.flush();
-        request.skillIds().forEach(id -> desiredSkills.save(new ProfileDesiredSkill(userId, id)));
+        request.skillIds().forEach(id -> desiredSkills.save(new ProfileDesiredSkill(userId, id, skillMap.get(id))));
+        desiredSkills.flush();
         return response(requireProfile(userId));
     }
 

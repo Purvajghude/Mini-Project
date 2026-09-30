@@ -16,6 +16,7 @@ public class ProfileSkill {
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
     protected ProfileSkill() { }
     public ProfileSkill(UUID profileUserId, Long skillId, short proficiency) { this.profileUserId = profileUserId; this.skillId = skillId; this.selfAssessedProficiency = proficiency; }
+    public ProfileSkill(UUID profileUserId, Long skillId, Skill skill, short proficiency) { this.profileUserId = profileUserId; this.skillId = skillId; this.skill = skill; this.selfAssessedProficiency = proficiency; }
     @PrePersist void created() { createdAt = Instant.now(); updatedAt = createdAt; }
     @PreUpdate void updated() { updatedAt = Instant.now(); }
     public Skill getSkill() { return skill; }
