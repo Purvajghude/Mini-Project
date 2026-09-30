@@ -37,6 +37,7 @@ export interface Profile {
   primaryDomain: string | null;
   onboardingComplete: boolean;
   skills: ProfileSkill[];
+  discordId?: string | null;
 }
 
 export interface AuthResponse {
@@ -55,6 +56,7 @@ export interface UpdateProfileRequest {
   availability?: string | null;
   primaryDomain?: string | null;
   onboardingComplete?: boolean;
+  discordId?: string | null;
 }
 
 export interface ReplaceSkillsRequest {
@@ -123,6 +125,7 @@ export interface CandidateRecommendation {
   githubEvidence?: GitHubEvidence;
   savedForLater?: boolean;
   status?: 'none' | 'passed' | 'saved' | 'interested' | 'connected';
+  discordId?: string | null;
 }
 
 export interface IncomingInterest {

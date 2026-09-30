@@ -166,6 +166,7 @@ function getInitialDatabase(): MockDatabase {
     primaryDomain: 'Frontend & Web Systems',
     onboardingComplete: true,
     skills: currentProfileSkills,
+    discordId: '912398492019485716',
   };
 
   const recommendations: CandidateRecommendation[] = [
@@ -179,6 +180,7 @@ function getInitialDatabase(): MockDatabase {
       bio: 'Java and Spring Boot engineer. I focus on resilient APIs, clean database schema design, and microservices.',
       availability: '10–12 hrs / week',
       primaryDomain: 'Backend & Distributed Systems',
+      discordId: '712398492019485712',
       score: 95,
       reason: 'Outstanding backend depth fills your distributed systems gap. Shared experience shipping RESTful web prototypes.',
       skills: [
@@ -241,6 +243,7 @@ function getInitialDatabase(): MockDatabase {
       bio: 'Product designer obsessed with student friction points, accessibility, and clean design systems in Figma.',
       availability: '6–8 hrs / week',
       primaryDomain: 'Product Design & UX',
+      discordId: '642398492019485713',
       score: 89,
       reason: 'Brings strong user research, information architecture, and UI polish to elevate your functional code into a product.',
       skills: [
@@ -292,6 +295,7 @@ function getInitialDatabase(): MockDatabase {
       bio: 'Data scientist who builds small, high-leverage ML pipelines and FastAPI backends.',
       availability: '5–7 hrs / week',
       primaryDomain: 'Machine Learning & Analytics',
+      discordId: '512398492019485714',
       score: 84,
       reason: 'Offers strong ML and data modeling skills to power recommendation engines or predictive models for your project.',
       skills: [
@@ -943,6 +947,7 @@ export class MockApiAdapter implements ApiClient {
       availability: body.availability !== undefined ? body.availability : this.db.currentUser.availability,
       primaryDomain: body.primaryDomain !== undefined ? body.primaryDomain : this.db.currentUser.primaryDomain,
       onboardingComplete: body.onboardingComplete !== undefined ? body.onboardingComplete : this.db.currentUser.onboardingComplete,
+      discordId: body.discordId !== undefined ? body.discordId : this.db.currentUser.discordId,
     };
 
     this.persist();

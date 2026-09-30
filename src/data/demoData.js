@@ -16,6 +16,7 @@ export const currentUser = {
   stats: { collaborators: 6, helped: 18, reputation: 4.8 },
   about:
     'I enjoy taking rough product ideas and making them clear enough to use. Looking for people who care about the problem as much as the demo.',
+  discordId: '912398492019485716',
 };
 
 export const recommendations = [
@@ -27,6 +28,7 @@ export const recommendations = [
     headline: 'Java + Spring Boot developer. I make the invisible parts dependable.',
     course: 'B.Tech IT · 3rd year',
     availability: '8–10 hrs / week',
+    discordId: '712398492019485712',
     score: 94,
     reason:
       'Strong backend depth fills your API and data-model gap; both of you have shipped frontend prototypes.',
@@ -48,6 +50,7 @@ export const recommendations = [
     headline: 'Product designer turning research into interfaces people understand.',
     course: 'B.Des · 2nd year',
     availability: '5–7 hrs / week',
+    discordId: '642398492019485713',
     score: 88,
     reason:
       'You can build the interface together; Pooja brings research and visual-system strength your current work lacks.',
@@ -63,12 +66,13 @@ export const recommendations = [
   },
   {
     id: 'u-rahul-04',
-    username: 'sanskar',
-    displayName: 'Sanskar Bandekar',
+    username: 'Yogesh',
+    displayName: 'Yogesh Gaikwad',
     accent: 'green',
     headline: 'Data person with a bias for prototypes that answer one real question.',
     course: 'B.Tech AI & DS · 3rd year',
     availability: '4–6 hrs / week',
+    discordId: '512398492019485714',
     score: 82,
     reason:
       'Her data and ML skills complement your product delivery skills, with enough shared JavaScript experience to move quickly.',
@@ -94,6 +98,7 @@ export const matches = [
       displayName: 'Mrunali Shinde',
       accent: 'orange',
       headline: 'UX designer who asks the question behind the question.',
+      discordId: '812398492019485715',
     },
     project: 'Campus accessibility navigator',
     lastMessage: 'I added the route notes to the shared outline.',
@@ -108,6 +113,7 @@ export const matches = [
       id: 'u-aditya-12',
       username: 'parth',
       displayName: 'Parth Patil',
+      discordId: '772398492019485717',
       accent: 'blue',
       headline: 'Java developer interested in systems that stay understandable.',
     },
