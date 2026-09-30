@@ -40,7 +40,7 @@ WITH demo AS (
 )
 INSERT INTO profile_skill (profile_user_id, skill_id, self_assessed_proficiency)
 SELECT demo.user_id,
-       (1 + ((demo.n + slot.position_index * 5 - 2) % 15))::bigint,
+       (1 + (((demo.n + slot.position_index * 5 - 2) % 15 + 15) % 15))::bigint,
        (3 + ((demo.n + slot.position_index) % 3))::smallint
 FROM demo CROSS JOIN generate_series(0, 2) AS slot(position_index)
 ON CONFLICT (profile_user_id, skill_id) DO NOTHING;
@@ -60,7 +60,7 @@ WITH demo AS (
     FROM generate_series(1, 100) AS n
 )
 INSERT INTO profile_interest (profile_user_id, interest_id)
-SELECT demo.user_id, (1 + ((demo.n + slot.position_index - 2) % 12))::bigint
+SELECT demo.user_id, (1 + (((demo.n + slot.position_index - 2) % 12 + 12) % 12))::bigint
 FROM demo CROSS JOIN generate_series(0, 1) AS slot(position_index)
 ON CONFLICT (profile_user_id, interest_id) DO NOTHING;
 
