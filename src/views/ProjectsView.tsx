@@ -280,9 +280,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             <h1 style={{ margin: '4px 0 0 0', fontSize: 24, fontWeight: 750, color: 'var(--md-sys-color-on-surface)' }}>
               Project Explorer &amp; Teams
             </h1>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--md-sys-color-on-surface-variant)' }}>
-              Discover interdisciplinary projects looking for collaborators or create your own project workspace.
-            </p>
           </div>
 
           <Button
@@ -518,24 +515,26 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
                 {/* Open Roles */}
                 {project.openRoles.length > 0 && (
-                  <div
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 'var(--md-sys-shape-corner-extra-small)',
-                      backgroundColor: 'var(--md-sys-color-surface-container-high)',
-                      fontSize: 12,
-                    }}
-                  >
-                    <strong style={{ display: 'block', color: 'var(--md-sys-color-primary)', marginBottom: 4 }}>
-                      Open Collaboration Roles:
-                    </strong>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--md-sys-color-outline)' }}>
+                      Seeking:
+                    </span>
                     {project.openRoles.map((role) => (
-                      <div key={role.title} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-                        <span>{role.title}</span>
-                        <span style={{ fontSize: 11, color: 'var(--md-sys-color-outline)' }}>
-                          ({role.skillsNeeded.join(', ')})
-                        </span>
-                      </div>
+                      <span
+                        key={role.title}
+                        title={`Skills needed: ${role.skillsNeeded.join(', ')}`}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '3px 8px',
+                          borderRadius: 'var(--md-sys-shape-corner-small)',
+                          backgroundColor: 'var(--md-sys-color-surface-container-high)',
+                          color: 'var(--md-sys-color-primary)',
+                          border: '1px solid var(--md-sys-color-outline-variant)',
+                        }}
+                      >
+                        {role.title}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -588,9 +587,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Sprint Task Board</h2>
-                  <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Track deliverable progress across team roles.
-                  </span>
                 </div>
                 <Button
                   variant="filled"
@@ -753,9 +749,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Project Schedule &amp; Deadlines</h2>
-                  <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Key review gates, deliverables, and team sync dates.
-                  </span>
                 </div>
                 <Button
                   variant="filled"
@@ -860,9 +853,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Team Availability Poll</h2>
-                  <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Vote on time windows to discover the optimal recurring team sync.
-                  </span>
                 </div>
                 <Button
                   variant="filled"
