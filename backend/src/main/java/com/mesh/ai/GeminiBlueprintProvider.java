@@ -1,0 +1,221 @@
+package com.mesh.ai;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mesh.projects.ProjectRequirementsService.RequirementResponse;
+import com.mesh.projects.ProjectSkillRequirement.Importance;
+import com.mesh.skills.Skill;
+import com.mesh.skills.SkillRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.*;
+
+/**
+ * Turns a project idea into a structured blueprint with Gemini. Only the idea text, optional domain
+ * and the public skill catalogue are sent — never profile data. Every model response is validated;
+ * skills are mapped to catalogue entries by name and unknown ones are returned as unmapped, never
+ * given invented IDs. Any failure throws {@link BlueprintGenerationException} so the caller can fall back.
+ */
+@Component
+public class GeminiBlueprintProvider {
+    /** HTTP seam so tests can replace the network call. Returns the raw response body. */
+    @FunctionalInterface
+    interface Transport { String post(String url, String apiKey, String body, Duration timeout) throws Exception; }
+
+    public static class BlueprintGenerationException extends RuntimeException {
+        public BlueprintGenerationException(String message) { super(message); }
+    }
+
+    public record Unmapped(String name, Importance importance, String reason) { }
+    public record Generated(String title, String summary, short targetTeamSize, List<RequirementResponse> requirements,
+                            List<String> objectives, List<String> assumptions, List<Unmapped> unmappedSkills) { }
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+    private final String apiKey;
+    private final String model;
+    private final Duration timeout;
+    private final SkillRepository skills;
+    private final Transport transport;
+
+    @Autowired
+    public GeminiBlueprintProvider(@Value("${GEMINI_API_KEY:}") String apiKey,
+                                   @Value("${GEMINI_MODEL:gemini-2.5-flash}") String model,
+                                   @Value("${GEMINI_TIMEOUT_SECONDS:20}") long timeoutSeconds,
+                                   SkillRepository skills) {
+        this(apiKey, model, Duration.ofSeconds(timeoutSeconds), skills, GeminiBlueprintProvider::httpPost);
+    }
+
+    GeminiBlueprintProvider(String apiKey, String model, Duration timeout, SkillRepository skills, Transport transport) {
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
+        this.model = model;
+        this.timeout = timeout;
+        this.skills = skills;
+        this.transport = transport;
+    }
+
+    public boolean configured() { return !apiKey.isEmpty(); }
+
+    public Generated generate(String idea, String domain, Short teamSizeHint) {
+        if (!configured()) throw new BlueprintGenerationException("GEMINI_API_KEY is not configured.");
+        List<Skill> catalogue = skills.findAllByOrderByNameAsc();
+        String body = requestBody(idea, domain, teamSizeHint, catalogue);
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
+        String raw;
+        try {
+            raw = transport.post(url, apiKey, body, timeout);
+        } catch (java.net.http.HttpTimeoutException e) {
+            throw new BlueprintGenerationException("Gemini request timed out.");
+        } catch (BlueprintGenerationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BlueprintGenerationException("Gemini request failed: " + e.getClass().getSimpleName());
+        }
+        return parse(raw, catalogue);
+    }
+
+    // ---------- request ----------
+
+    private String requestBody(String idea, String domain, Short teamSizeHint, List<Skill> catalogue) {
+        String skillList = catalogue.stream().map(s -> s.getName() + " (" + s.getCategory() + ")").reduce((a, b) -> a + ", " + b).orElse("");
+        String prompt = """
+            A university engineering student described a project idea. Produce a concise technical blueprint
+            that helps them recruit teammates.
+
+            Idea: %s
+            Area hint: %s
+            Team size hint (including the student): %s
+
+            MESH skill catalogue: %s
+
+            Rules:
+            - title: a short project name (max 8 words), not a restatement of the idea.
+            - summary: 2-3 plain sentences on what will be built and why.
+            - objectives: 3-5 concrete, verifiable technical objectives.
+            - assumptions: 1-4 important technical assumptions or scope limits.
+            - requirements: the engineering capabilities the project genuinely needs (3-8).
+              Use the exact catalogue name when a catalogue skill fits. If an essential capability is not
+              in the catalogue (for example embedded systems), name it plainly instead; do not force a poor match.
+              importance REQUIRED only when the project cannot succeed without it.
+              minimumProficiency 1-5 (1 aware, 3 has built something real, 5 expert); prefer 2-4 for student projects.
+              reason: one sentence on why the project needs it.
+            - targetTeamSize: 2-6 people including the student.
+            Write for students; avoid buzzwords and marketing language.
+            """.formatted(idea, domain == null ? "none" : domain, teamSizeHint == null ? "none" : teamSizeHint, skillList);
+
+        ObjectNode root = JSON.createObjectNode();
+        root.putArray("contents").addObject().put("role", "user").putArray("parts").addObject().put("text", prompt);
+        ObjectNode config = root.putObject("generationConfig");
+        config.put("temperature", 0.4);
+        config.put("responseMimeType", "application/json");
+        config.set("responseSchema", responseSchema());
+        return root.toString();
+    }
+
+    private static JsonNode responseSchema() {
+        try {
+            return JSON.readTree("""
+                {"type":"OBJECT","required":["title","summary","objectives","assumptions","targetTeamSize","requirements"],
+                 "properties":{
+                  "title":{"type":"STRING"},"summary":{"type":"STRING"},
+                  "objectives":{"type":"ARRAY","items":{"type":"STRING"}},
+                  "assumptions":{"type":"ARRAY","items":{"type":"STRING"}},
+                  "targetTeamSize":{"type":"INTEGER"},
+                  "requirements":{"type":"ARRAY","items":{"type":"OBJECT",
+                    "required":["skill","importance","minimumProficiency","reason"],
+                    "properties":{"skill":{"type":"STRING"},"importance":{"type":"STRING","enum":["REQUIRED","PREFERRED"]},
+                      "minimumProficiency":{"type":"INTEGER"},"reason":{"type":"STRING"}}}}}}
+                """);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    // ---------- response validation ----------
+
+    Generated parse(String raw, List<Skill> catalogue) {
+        JsonNode blueprint;
+        try {
+            JsonNode envelope = JSON.readTree(raw);
+            JsonNode text = envelope.path("candidates").path(0).path("content").path("parts").path(0).path("text");
+            if (!text.isTextual()) throw new BlueprintGenerationException("Gemini returned no candidate text.");
+            blueprint = JSON.readTree(text.asText());
+        } catch (BlueprintGenerationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BlueprintGenerationException("Gemini returned invalid JSON.");
+        }
+
+        String title = text(blueprint, "title", 120);
+        String summary = text(blueprint, "summary", 1000);
+        if (title.isEmpty() || summary.isEmpty()) throw new BlueprintGenerationException("Gemini response is missing a title or summary.");
+        int size = blueprint.path("targetTeamSize").asInt(4);
+        short teamSize = (short) (size >= 1 && size <= 8 ? size : 4);
+
+        Map<String, Skill> byName = new HashMap<>();
+        for (Skill s : catalogue) byName.put(normalize(s.getName()), s);
+        Map<Long, RequirementResponse> mapped = new LinkedHashMap<>();
+        Map<String, Unmapped> unmapped = new LinkedHashMap<>();
+        for (JsonNode r : blueprint.path("requirements")) {
+            String name = text(r, "skill", 80);
+            Importance importance = "REQUIRED".equals(r.path("importance").asText()) ? Importance.REQUIRED
+                : "PREFERRED".equals(r.path("importance").asText()) ? Importance.PREFERRED : null;
+            int level = r.path("minimumProficiency").asInt(0);
+            String reason = text(r, "reason", 300);
+            if (name.isEmpty() || importance == null || level < 1 || level > 5) continue; // drop malformed entries, keep the rest
+            Skill skill = byName.get(normalize(name));
+            if (skill == null) {
+                unmapped.putIfAbsent(normalize(name), new Unmapped(name, importance, reason.isEmpty() ? null : reason));
+                continue;
+            }
+            RequirementResponse existing = mapped.get(skill.getId());
+            if (existing == null || (existing.importance() == Importance.PREFERRED && importance == Importance.REQUIRED)) {
+                mapped.put(skill.getId(), new RequirementResponse(skill.getId(), skill.getName(), (short) level, importance, reason.isEmpty() ? null : reason));
+            }
+        }
+        if (mapped.isEmpty() && unmapped.isEmpty()) throw new BlueprintGenerationException("Gemini response contained no usable requirements.");
+
+        return new Generated(title, summary, teamSize,
+            mapped.values().stream().limit(30).toList(),
+            strings(blueprint.path("objectives"), 6, 200),
+            strings(blueprint.path("assumptions"), 6, 200),
+            unmapped.values().stream().limit(10).toList());
+    }
+
+    private static String normalize(String s) { return s.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s_-]+", " "); }
+
+    private static String text(JsonNode node, String field, int max) {
+        String v = node.path(field).asText("").trim();
+        return v.length() > max ? v.substring(0, max).trim() : v;
+    }
+
+    private static List<String> strings(JsonNode array, int maxItems, int maxLength) {
+        List<String> out = new ArrayList<>();
+        for (JsonNode n : array) {
+            String v = n.asText("").trim();
+            if (!v.isEmpty() && out.size() < maxItems) out.add(v.length() > maxLength ? v.substring(0, maxLength).trim() : v);
+        }
+        return out;
+    }
+
+    // ---------- transport ----------
+
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+
+    private static String httpPost(String url, String apiKey, String body, Duration timeout) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(timeout)
+            .header("Content-Type", "application/json").header("x-goog-api-key", apiKey)
+            .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 429) throw new BlueprintGenerationException("Gemini rate limit reached (429).");
+        if (response.statusCode() >= 400) throw new BlueprintGenerationException("Gemini returned HTTP " + response.statusCode() + ".");
+        return response.body();
+    }
+}

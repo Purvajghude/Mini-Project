@@ -5,3 +5,8 @@ node/
 .env.local
 backend/target/
 backend/.env
+
+# MESH web client
+web/dist/
+web/server/data/
+web/.demo-accounts.local.md
