@@ -41,21 +41,28 @@ public class GeminiBlueprintProvider {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final String apiKey;
     private final String model;
+    private final String retryModel;
     private final Duration timeout;
     private final SkillRepository skills;
     private final Transport transport;
 
     @Autowired
     public GeminiBlueprintProvider(@Value("${GEMINI_API_KEY:}") String apiKey,
-                                   @Value("${GEMINI_MODEL:gemini-2.5-flash}") String model,
-                                   @Value("${GEMINI_TIMEOUT_SECONDS:20}") long timeoutSeconds,
+                                   @Value("${GEMINI_MODEL:gemini-3.5-flash}") String model,
+                                   @Value("${GEMINI_RETRY_MODEL:gemini-3.5-flash-lite}") String retryModel,
+                                   @Value("${GEMINI_TIMEOUT_SECONDS:30}") long timeoutSeconds,
                                    SkillRepository skills) {
-        this(apiKey, model, Duration.ofSeconds(timeoutSeconds), skills, GeminiBlueprintProvider::httpPost);
+        this(apiKey, model, retryModel, Duration.ofSeconds(timeoutSeconds), skills, GeminiBlueprintProvider::httpPost);
     }
 
     GeminiBlueprintProvider(String apiKey, String model, Duration timeout, SkillRepository skills, Transport transport) {
+        this(apiKey, model, "", timeout, skills, transport);
+    }
+
+    GeminiBlueprintProvider(String apiKey, String model, String retryModel, Duration timeout, SkillRepository skills, Transport transport) {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = model;
+        this.retryModel = retryModel == null ? "" : retryModel.trim();
         this.timeout = timeout;
         this.skills = skills;
         this.transport = transport;
@@ -67,10 +74,19 @@ public class GeminiBlueprintProvider {
         if (!configured()) throw new BlueprintGenerationException("GEMINI_API_KEY is not configured.");
         List<Skill> catalogue = skills.findAllByOrderByNameAsc();
         String body = requestBody(idea, domain, teamSizeHint, catalogue);
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
-        String raw;
         try {
-            raw = transport.post(url, apiKey, body, timeout);
+            return parse(call(model, body), catalogue);
+        } catch (BlueprintGenerationException e) {
+            // Overload/rate limits are transient: one retry on the lighter model before the caller falls back.
+            if (retryModel.isEmpty() || retryModel.equals(model) || !e.getMessage().matches(".*(503|429).*")) throw e;
+            return parse(call(retryModel, body), catalogue);
+        }
+    }
+
+    private String call(String modelName, String body) {
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent";
+        try {
+            return transport.post(url, apiKey, body, timeout);
         } catch (java.net.http.HttpTimeoutException e) {
             throw new BlueprintGenerationException("Gemini request timed out.");
         } catch (BlueprintGenerationException e) {
@@ -78,13 +94,16 @@ public class GeminiBlueprintProvider {
         } catch (Exception e) {
             throw new BlueprintGenerationException("Gemini request failed: " + e.getClass().getSimpleName());
         }
-        return parse(raw, catalogue);
     }
 
     // ---------- request ----------
 
     private String requestBody(String idea, String domain, Short teamSizeHint, List<Skill> catalogue) {
-        String skillList = catalogue.stream().map(s -> s.getName() + " (" + s.getCategory() + ")").reduce((a, b) -> a + ", " + b).orElse("");
+        // Bare names grouped by category, so the model echoes exact names (not "Name (Category)").
+        Map<String, List<String>> byCategory = new TreeMap<>();
+        for (Skill s : catalogue) byCategory.computeIfAbsent(s.getCategory(), k -> new ArrayList<>()).add(s.getName());
+        StringBuilder skillList = new StringBuilder();
+        byCategory.forEach((category, names) -> skillList.append("\n  ").append(category).append(": ").append(String.join(", ", names)));
         String prompt = """
             A university engineering student described a project idea. Produce a concise technical blueprint
             that helps them recruit teammates.
@@ -189,7 +208,10 @@ public class GeminiBlueprintProvider {
             unmapped.values().stream().limit(10).toList());
     }
 
-    private static String normalize(String s) { return s.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s_-]+", " "); }
+    /** Case/spacing-insensitive name match; ignores a trailing "(…)" qualifier such as "Figma (Design)". */
+    static String normalize(String s) {
+        return s.trim().replaceAll("\\s*\\([^)]*\\)\\s*$", "").toLowerCase(Locale.ROOT).replaceAll("[\\s_-]+", " ");
+    }
 
     private static String text(JsonNode node, String field, int max) {
         String v = node.path(field).asText("").trim();

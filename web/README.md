@@ -29,7 +29,7 @@ Checks: `npm run web:typecheck`, `npm run web:build` (output in `web/dist`).
 | `VITE_TLDRAW_LICENSE_KEY` | web build | Required by tldraw on non-localhost HTTPS. Free hobby keys exist for non-commercial projects. |
 | `MESH_API` | sync server | API base the sync server uses to check membership. Default `http://localhost:8080/api/v1`. |
 | `SYNC_PORT`, `SYNC_DATA_DIR`, `SYNC_ALLOWED_ORIGIN` | sync server | Port, snapshot folder, CORS origin for the ticket endpoint when not proxied. |
-| `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_TIMEOUT_SECONDS` | API (server-side only) | AI blueprints. Without a key every request falls back to the template, labelled as such. |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-3.5-flash`), `GEMINI_RETRY_MODEL` (default `gemini-3.5-flash-lite`), `GEMINI_TIMEOUT_SECONDS` (default 30) | API (server-side only) | AI blueprints. Without a key, or if Gemini fails, requests fall back to the template, labelled as such. |
 
 ## Two-student demo
 
