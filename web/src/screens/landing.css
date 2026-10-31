@@ -1,0 +1,123 @@
+.mesh-landing { overflow: clip; background: #eeefed; color: #1a2327; }
+.mesh-hero { position: relative; min-height: 760px; height: 100svh; isolation: isolate; overflow: hidden; color: #fff; background: #213747; }
+.mesh-hero-image { position: absolute; z-index: -3; inset: -5%; background: url('/mesh-mountain-clouds.png') center 54% / cover no-repeat; transform: translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0) scale(1.03); animation: mesh-drift 36s ease-in-out infinite alternate; }
+.mesh-hero::before { content: ''; position: absolute; z-index: -2; inset: 0; background: linear-gradient(180deg, rgb(5 18 29 / .34), transparent 24%, rgb(8 24 37 / .1) 48%, rgb(5 19 31 / .62)); }
+.mesh-hero::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 52% 55% at 50% 48%, rgb(15 38 55 / .25), transparent 75%); }
+.mesh-cloud-field { position: absolute; z-index: -1; inset: -5% -10%; overflow: hidden; pointer-events: none; transform: translate3d(var(--cloud-parallax-x, 0px), var(--cloud-parallax-y, 0px), 0); mask-image: linear-gradient(to bottom, transparent 4%, #000 27%, #000 80%, transparent 100%); }
+.mesh-cloud-layer { position: absolute; inset: -2% -13%; background: url('/mesh-cloud-layer.png') center 55% / 100% 100% no-repeat; will-change: transform; }
+.mesh-cloud-layer-one { opacity: .35; animation: mesh-cloud-travel 26s ease-in-out infinite alternate; }
+.mesh-cloud-layer-two { opacity: .18; transform: scaleX(-1); animation: mesh-cloud-return 34s ease-in-out infinite alternate; }
+.mesh-cursor-wake { position: absolute; z-index: 1; left: var(--pointer-x, 50%); top: var(--pointer-y, 50%); width: 260px; height: 260px; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, rgb(237 247 250 / .23), rgb(226 239 242 / .06) 38%, transparent 72%); filter: blur(14px); mix-blend-mode: screen; opacity: 0; transition: opacity 300ms, left 170ms cubic-bezier(.23, 1, .32, 1), top 170ms cubic-bezier(.23, 1, .32, 1); pointer-events: none; }
+.mesh-hero.has-pointer .mesh-cursor-wake { opacity: 1; }
+.mesh-hero-nav { position: relative; z-index: 2; width: min(100% - 9vw, 1600px); height: 86px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; animation: mesh-arrive 750ms .05s cubic-bezier(.23, 1, .32, 1) backwards; }
+.mesh-hero-nav .wordmark { font-size: 20px; font-weight: 700; letter-spacing: .13em; color: #fff; }
+.mesh-hero-nav .wordmark svg { width: 27px; height: 27px; }
+.mesh-hero-nav .wordmark circle:last-child { fill: #344855; stroke: #fff; }
+.mesh-hero-nav nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 40px); }
+.mesh-nav-link, .mesh-nav-action { font: 500 14px/1 var(--f-sans); text-decoration: none; }
+.mesh-nav-link { color: rgb(255 255 255 / .9); transition: color .2s; }
+.mesh-nav-link:hover { color: #fff; }
+.mesh-nav-action { min-height: 40px; display: inline-flex; align-items: center; gap: 13px; padding: 0 18px; border: 1px solid rgb(255 255 255 / .56); border-radius: 100px; color: #fff; backdrop-filter: blur(8px); transition: background .2s, color .2s, transform .2s; }
+.mesh-nav-action:hover { background: #fff; color: #172934; transform: translateY(-2px); }
+.mesh-nav-action svg { width: 16px; height: 16px; }
+.mesh-hero-center { position: absolute; left: 50%; top: 47%; width: min(92vw, 1300px); transform: translate(-50%, -50%); text-align: center; text-shadow: 0 2px 34px rgb(3 19 30 / .33); }
+.mesh-hero-kicker { font: 500 clamp(11px, .85vw, 13px)/1.5 var(--f-sans); letter-spacing: .27em; text-transform: uppercase; animation: mesh-arrive 900ms .18s cubic-bezier(.23, 1, .32, 1) backwards; }
+@property --logo-clear { syntax: '<length>'; inherits: false; initial-value: -120px; }
+.mesh-hero-center h1 { --logo-clear: -120px; position: relative; z-index: 1; display: inline-block; margin: .055em 0 -.035em; font: 400 clamp(132px, 22vw, 360px)/.98 Georgia, 'Times New Roman', serif; letter-spacing: -.105em; padding-right: .105em; cursor: crosshair; mask-image: radial-gradient(circle at var(--logo-x, 50%) var(--logo-y, 50%), transparent var(--logo-clear), #000 calc(var(--logo-clear) + 120px)); transition: --logo-clear 720ms cubic-bezier(.23, 1, .32, 1), opacity 600ms ease; animation: mesh-title-arrive 1150ms .22s cubic-bezier(.23, 1, .32, 1) backwards; }
+.mesh-hero-line { position: relative; z-index: 1; font: 400 clamp(20px, 2.5vw, 34px)/1.1 var(--f-serif); letter-spacing: -.025em; transition: opacity 650ms ease, filter 700ms ease; animation: mesh-arrive 850ms .5s cubic-bezier(.23, 1, .32, 1) backwards; }
+.mesh-logo-cloud { position: absolute; z-index: 2; inset: -32% -15% -38%; background: url('/mesh-cloud-layer.png') center 55% / 100% 100% no-repeat; mask-image: radial-gradient(ellipse 50% 43% at 50% 52%, #000 10%, transparent 78%); opacity: 0; transform: translate3d(-3%, 12%, 0) scale(1.08); filter: blur(18px); pointer-events: none; transition: opacity 520ms ease, transform 1250ms cubic-bezier(.77, 0, .175, 1); }
+.mesh-hero.is-logo-hovered .mesh-hero-center h1 { --logo-clear: 95vw; opacity: .7; transition-duration: 1350ms, 800ms; transition-timing-function: cubic-bezier(.77, 0, .175, 1), ease; }
+.mesh-hero.is-logo-hovered .mesh-hero-line { opacity: .48; filter: blur(2px); }
+.mesh-hero.is-logo-hovered .mesh-logo-cloud { opacity: .58; transform: translate3d(4%, -5%, 0) scale(1.12); }
+.mesh-hero-bottom { position: absolute; left: 4.5vw; right: 4.5vw; bottom: clamp(32px, 5.2vh, 64px); display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 20px; animation: mesh-arrive 850ms .75s cubic-bezier(.23, 1, .32, 1) backwards; }
+.mesh-hero-bottom > p { font: 400 15px/1.6 var(--f-serif); color: rgb(255 255 255 / .86); }
+.mesh-scroll-cue { justify-self: center; display: grid; justify-items: center; gap: 11px; color: #fff; text-decoration: none; font: 500 13px/1 var(--f-sans); }
+.mesh-scroll-cue svg { width: 19px; height: 19px; animation: mesh-arrow 2s ease-in-out infinite; }
+.mesh-hero-index { justify-self: end; font: 500 12px/1 var(--f-mono); letter-spacing: .1em; color: rgb(255 255 255 / .72); }
+
+.mesh-section { padding: clamp(88px, 11vw, 170px) max(5vw, calc((100vw - 1440px) / 2)); }
+.mesh-section-label { display: flex; gap: 14px; align-items: center; font: 600 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; }
+.mesh-section-label span { opacity: .48; }
+.mesh-intro { background: #f3f2ef; }
+.mesh-intro-content { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: clamp(40px, 7vw, 120px); align-items: end; margin-top: clamp(60px, 8vw, 120px); }
+.mesh-intro h2, .mesh-journey h2, .mesh-principle h2, .mesh-finale h2 { font: 400 clamp(56px, 7.5vw, 128px)/.99 var(--f-serif); letter-spacing: -.055em; text-wrap: balance; }
+.mesh-intro h2 em, .mesh-journey h2 em, .mesh-principle h2 em, .mesh-finale h2 em { font-weight: 400; }
+.mesh-intro-detail { display: grid; gap: 38px; padding-bottom: 12px; }
+.mesh-intro-detail p { max-width: 32em; font: 400 clamp(19px, 1.7vw, 25px)/1.45 var(--f-serif); color: #414c50; }
+.mesh-text-link { display: inline-flex; align-items: center; gap: 24px; width: fit-content; border-bottom: 1px solid currentColor; padding-bottom: 10px; text-decoration: none; font: 600 14px/1 var(--f-sans); }
+.mesh-text-link svg { width: 18px; height: 18px; transition: transform .2s; }
+.mesh-text-link:hover svg { transform: translate(3px, -3px); }
+.mesh-journey { background: #e7eaeb; }
+.mesh-journey-heading { display: flex; justify-content: space-between; align-items: end; gap: 50px; margin: clamp(60px, 8vw, 110px) 0 clamp(50px, 7vw, 100px); }
+.mesh-journey-heading p { max-width: 350px; color: #526065; font: 400 20px/1.45 var(--f-serif); }
+.mesh-journey-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid #aab3b7; }
+.mesh-journey-list li { display: grid; grid-template-columns: 90px minmax(0, 1.15fr) minmax(220px, .8fr) 24px; gap: 24px; align-items: center; padding: clamp(20px, 2.2vw, 32px) 0; border-bottom: 1px solid #aab3b7; }
+.mesh-step-number { font: 500 12px/1 var(--f-mono); color: #607078; }
+.mesh-journey-list h3 { font: 400 clamp(26px, 3vw, 44px)/1.1 var(--f-serif); letter-spacing: -.03em; }
+.mesh-journey-list p { font: 400 16px/1.5 var(--f-sans); color: #526065; }
+.mesh-journey-list li > svg { width: 20px; height: 20px; color: #829097; }
+.mesh-principle { background: #1b2e39; color: #f7f6f1; }
+.mesh-principle-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); gap: 70px; margin-top: clamp(60px, 8vw, 120px); }
+.mesh-principle h2 { font-size: clamp(52px, 6.5vw, 110px); }
+.mesh-principle-copy { max-width: 520px; display: grid; align-content: end; gap: 24px; }
+.mesh-principle-copy p { font: 400 clamp(18px, 1.6vw, 23px)/1.5 var(--f-serif); color: #d1dadc; }
+.mesh-principle-words { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 22px; margin-top: clamp(90px, 11vw, 160px); padding-top: 25px; border-top: 1px solid rgb(255 255 255 / .3); font: 500 12px/1 var(--f-mono); letter-spacing: .2em; color: #a9b9be; }
+.mesh-finale { position: relative; isolation: isolate; min-height: min(810px, 90svh); display: grid; align-items: center; overflow: hidden; color: #fff; background: #314654; }
+.mesh-finale-image { position: absolute; z-index: -2; inset: 0; background: linear-gradient(90deg, rgb(11 31 43 / .83), rgb(16 39 50 / .4)), url('/mesh-mountain-clouds.png') center 60% / cover no-repeat; transform: scale(1.04); }
+.mesh-finale-inner { width: min(90%, 1440px); margin: auto; padding: 110px 0; }
+.mesh-finale h2 { margin: clamp(70px, 9vw, 125px) 0 54px; }
+.mesh-finale-action { display: inline-flex; align-items: center; gap: 30px; min-height: 58px; padding: 0 26px; border-radius: 100px; background: #f8f7f3; color: #1b2e39; text-decoration: none; font: 600 15px/1 var(--f-sans); transition: transform .2s, background .2s; }
+.mesh-finale-action:hover { transform: translateY(-3px); background: #e5f0f2; }
+.mesh-finale-action svg { width: 19px; height: 19px; }
+.mesh-landing-footer { min-height: 140px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 32px 5vw; background: #f3f2ef; color: #26343a; }
+.mesh-landing-footer > span { font: 500 12px/1.3 var(--f-mono); color: #6c787c; }
+
+@keyframes mesh-drift { from { background-position: 48% 54%; } to { background-position: 53% 57%; } }
+@keyframes mesh-cloud-travel { from { transform: translate3d(-7%, 2%, 0) scale(1.03); } to { transform: translate3d(7%, -7%, 0) scale(1.12); } }
+@keyframes mesh-cloud-return { from { transform: translate3d(8%, -3%, 0) scaleX(-1) scale(1.04); } to { transform: translate3d(-7%, 5%, 0) scaleX(-1) scale(1.12); } }
+@keyframes mesh-arrow { 50% { transform: translateY(5px); } }
+@keyframes mesh-arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes mesh-title-arrive { from { opacity: 0; transform: translateY(18px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@media (max-width: 900px) {
+  .mesh-intro-content, .mesh-principle-grid { grid-template-columns: 1fr; }
+  .mesh-intro-detail { max-width: 650px; }
+  .mesh-journey-list li { grid-template-columns: 55px 1fr 24px; }
+  .mesh-journey-list p { grid-column: 2; grid-row: 2; }
+  .mesh-journey-list li > svg { grid-column: 3; grid-row: 1; }
+}
+@media (max-width: 620px) {
+  .mesh-hero { min-height: 640px; }
+  .mesh-hero-image { background-position: 43% center; }
+  .mesh-hero-nav { height: 72px; width: calc(100% - 36px); }
+  .mesh-hero-nav .wordmark { font-size: 16px; }
+  .mesh-hero-nav .wordmark svg { width: 22px; height: 22px; }
+  .mesh-hero-nav nav { gap: 12px; }
+  .mesh-hero-nav .mesh-nav-link:first-child { display: none; }
+  .mesh-nav-action { min-height: 36px; padding: 0 12px; font-size: 12px; }
+  .mesh-hero-center { top: 46%; width: 96%; }
+  .mesh-hero-center h1 { font-size: clamp(102px, 25vw, 170px); }
+  .mesh-hero-kicker { font-size: 10px; letter-spacing: .16em; }
+  .mesh-hero-line { font-size: 21px; }
+  .mesh-hero-bottom { left: 20px; right: 20px; bottom: 28px; grid-template-columns: 1fr auto; }
+  .mesh-hero-bottom > p { font-size: 13px; }
+  .mesh-scroll-cue { grid-column: 2; grid-row: 1; font-size: 11px; }
+  .mesh-hero-index { display: none; }
+  .mesh-section { padding: 82px 22px; }
+  .mesh-intro h2, .mesh-journey h2, .mesh-principle h2, .mesh-finale h2 { font-size: clamp(47px, 12vw, 75px); }
+  .mesh-intro-content, .mesh-journey-heading, .mesh-principle-grid { margin-top: 56px; }
+  .mesh-journey-heading { display: block; }
+  .mesh-journey-heading p { margin-top: 30px; }
+  .mesh-journey-list { margin-top: 55px; }
+  .mesh-journey-list li { gap: 10px; }
+  .mesh-journey-list h3 { font-size: 27px; }
+  .mesh-journey-list p { font-size: 14px; }
+  .mesh-principle-words { gap: 20px; }
+  .mesh-finale { min-height: 620px; }
+  .mesh-finale-inner { width: calc(100% - 44px); }
+  .mesh-landing-footer { display: grid; gap: 18px; padding: 36px 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mesh-hero-image, .mesh-cloud-layer, .mesh-scroll-cue svg, .mesh-hero-nav, .mesh-hero-kicker, .mesh-hero-center h1, .mesh-hero-line, .mesh-hero-bottom { animation: none; }
+  .mesh-cursor-wake { display: none; }
+}

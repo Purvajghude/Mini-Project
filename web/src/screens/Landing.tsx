@@ -1,130 +1,172 @@
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { Link } from '../lib/router';
-import { Meter, Wordmark } from '../ui';
+import { Wordmark } from '../ui';
+import './landing.css';
 
-const STEPS = [
-  ['Idea', 'Write what you want to build in plain words. No forms, no jargon.'],
-  ['Blueprint', 'MESH turns it into a technical document: requirements, levels, team size. Every line is editable.'],
-  ['Skill gap', 'See which requirements your team already covers, which are only partly covered, and which are open.'],
-  ['Team', 'Get up to three complementary team combinations, each explained skill by skill.'],
-  ['Build', 'Work together in one project space: tasks, meetings, messages and a shared board.'],
+const JOURNEY = [
+  { number: '01', title: 'Start with an idea.', detail: 'Describe what you want to make in your own words.' },
+  { number: '02', title: 'Shape the blueprint.', detail: 'Turn the idea into editable skills, levels, and a team size.' },
+  { number: '03', title: 'See what is missing.', detail: 'Find out which skills your team covers and where the gaps remain.' },
+  { number: '04', title: 'Find your people.', detail: 'Explore explained team suggestions and invite students to join.' },
+  { number: '05', title: 'Build together.', detail: 'Share tasks, events, polls, messages, and a live whiteboard.' },
 ] as const;
 
 export function Landing() {
   const { state } = useAuth();
+  const heroRef = useRef<HTMLElement>(null);
+  const pointerArmed = useRef(false);
+  const [logoHovered, setLogoHovered] = useState(false);
   const signedIn = state.status === 'signed-in';
+  const startPath = signedIn ? '/new' : '/register';
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let frame = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    const settle = () => {
+      currentX += (targetX - currentX) * 0.085;
+      currentY += (targetY - currentY) * 0.085;
+      hero.style.setProperty('--parallax-x', `${currentX}px`);
+      hero.style.setProperty('--parallax-y', `${currentY}px`);
+      hero.style.setProperty('--cloud-parallax-x', `${currentX * -0.85}px`);
+      hero.style.setProperty('--cloud-parallax-y', `${currentY * -0.7}px`);
+      if (Math.abs(targetX - currentX) + Math.abs(targetY - currentY) > 0.15) {
+        frame = requestAnimationFrame(settle);
+      } else {
+        frame = 0;
+      }
+    };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      pointerArmed.current = true;
+      const bounds = hero.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) / bounds.width;
+      const y = (event.clientY - bounds.top) / bounds.height;
+      targetX = (0.5 - x) * 18;
+      targetY = (0.5 - y) * 12;
+      hero.style.setProperty('--pointer-x', `${x * 100}%`);
+      hero.style.setProperty('--pointer-y', `${y * 100}%`);
+      hero.classList.add('has-pointer');
+      if (!frame) frame = requestAnimationFrame(settle);
+    };
+    const leave = () => {
+      hero.classList.remove('has-pointer');
+      targetX = 0;
+      targetY = 0;
+      if (!frame) frame = requestAnimationFrame(settle);
+    };
+    hero.addEventListener('pointermove', move);
+    hero.addEventListener('pointerleave', leave);
+    return () => {
+      cancelAnimationFrame(frame);
+      hero.removeEventListener('pointermove', move);
+      hero.removeEventListener('pointerleave', leave);
+    };
+  }, []);
+
   return (
-    <div className="landing">
-      <header className="wrap landing-nav">
-        <Wordmark />
-        <nav className="row">
-          {signedIn ? (
-            <Link to="/studio" className="btn btn-primary">Open your studio <ArrowRight /></Link>
-          ) : (
-            <>
-              <Link to="/login" className="btn btn-ghost">Sign in</Link>
-              <Link to="/register" className="btn btn-primary">Start a project</Link>
-            </>
-          )}
-        </nav>
-      </header>
+    <div className="landing mesh-landing">
+      <section ref={heroRef} className={`mesh-hero${logoHovered ? ' is-logo-hovered' : ''}`} aria-labelledby="mesh-hero-title">
+        <div className="mesh-hero-image" aria-hidden="true" />
+        <div className="mesh-cloud-field" aria-hidden="true">
+          <div className="mesh-cloud-layer mesh-cloud-layer-one" />
+          <div className="mesh-cloud-layer mesh-cloud-layer-two" />
+        </div>
+        <div className="mesh-cursor-wake" aria-hidden="true" />
+        <header className="mesh-hero-nav">
+          <Wordmark />
+          <nav aria-label="Landing navigation">
+            <a href="#the-journey" className="mesh-nav-link">Explore</a>
+            {signedIn ? <Link to="/studio" className="mesh-nav-action">Open studio <ArrowUpRight aria-hidden="true" /></Link> : <>
+              <Link to="/login" className="mesh-nav-link">Sign in</Link>
+              <Link to="/register" className="mesh-nav-action">Get started <ArrowUpRight aria-hidden="true" /></Link>
+            </>}
+          </nav>
+        </header>
+        <div className="mesh-hero-center">
+          <p className="mesh-hero-kicker">A place for ideas to find their people</p>
+          <h1
+            id="mesh-hero-title"
+            onPointerEnter={(event) => { if (event.pointerType !== 'touch' && pointerArmed.current) setLogoHovered(true); }}
+            onPointerMove={(event) => {
+              if (event.pointerType === 'touch') return;
+              setLogoHovered(true);
+              const bounds = event.currentTarget.getBoundingClientRect();
+              event.currentTarget.style.setProperty('--logo-x', `${event.clientX - bounds.left}px`);
+              event.currentTarget.style.setProperty('--logo-y', `${event.clientY - bounds.top}px`);
+            }}
+            onPointerLeave={() => setLogoHovered(false)}
+          >MESH</h1>
+          <p className="mesh-hero-line">Imagine more. Build together.</p>
+          <div className="mesh-logo-cloud" aria-hidden="true" />
+        </div>
+        <div className="mesh-hero-bottom">
+          <p>From the first spark of an idea<br />to the team that brings it to life.</p>
+          <a href="#the-journey" className="mesh-scroll-cue">Scroll to explore <ArrowDown aria-hidden="true" /></a>
+          <span className="mesh-hero-index">01 / 04</span>
+        </div>
+      </section>
 
-      <section className="wrap hero">
-        <div className="hero-copy">
-          <p className="meta">For engineering students · Idea → Team</p>
-          <h1 className="display">Great ideas deserve <em>the right people.</em></h1>
-          <p className="lede">
-            You know what you want to build, but not who on campus can build it with you. MESH turns your idea into a technical blueprint,
-            shows exactly which skills are missing, and finds students whose declared skills fill the gap.
-          </p>
-          <div className="row" style={{ '--gap': '10px', marginTop: 8 } as React.CSSProperties}>
-            <Link to={signedIn ? '/new' : '/register'} className="btn btn-signal btn-lg">Describe your idea <ArrowRight /></Link>
-            <a href="#how" className="btn btn-outline btn-lg">How it works</a>
+      <main>
+        <section className="mesh-intro mesh-section" aria-labelledby="mesh-intro-title">
+          <div className="mesh-section-label"><span>01</span> The idea</div>
+          <div className="mesh-intro-content">
+            <h2 id="mesh-intro-title">Great ideas deserve<br /><em>the right people.</em></h2>
+            <div className="mesh-intro-detail">
+              <p>You know what you want to build. MESH helps you turn that idea into a clear plan, see which skills are missing, and find students who can help make it real.</p>
+              <Link to={startPath} className="mesh-text-link">Describe your idea <ArrowUpRight aria-hidden="true" /></Link>
+            </div>
           </div>
-        </div>
-        <ExampleBlueprint />
-      </section>
+        </section>
 
-      <section id="how" className="wrap journey" aria-labelledby="how-title">
-        <div className="journey-head">
-          <p className="meta">The journey</p>
-          <h2 id="how-title" className="title">One idea, five <em>moves.</em></h2>
-        </div>
-        <ol className="journey-steps">
-          {STEPS.map(([name, text], i) => (
-            <li key={name}>
-              <span className="journey-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-              <h3 className="heading">{name}</h3>
-              <p className="muted">{text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+        <section id="the-journey" className="mesh-journey mesh-section" aria-labelledby="mesh-journey-title">
+          <div className="mesh-section-label"><span>02</span> The journey</div>
+          <div className="mesh-journey-heading">
+            <h2 id="mesh-journey-title">One idea.<br /><em>Five moves.</em></h2>
+            <p>A path from the thing you want to create to the people you can create it with.</p>
+          </div>
+          <ol className="mesh-journey-list">
+            {JOURNEY.map((step) => <li key={step.number}>
+              <span className="mesh-step-number">{step.number}</span>
+              <h3>{step.title}</h3>
+              <p>{step.detail}</p>
+              <ArrowUpRight aria-hidden="true" />
+            </li>)}
+          </ol>
+        </section>
 
-      <section className="wrap honest" aria-labelledby="honest-title">
-        <div>
-          <p className="meta">Honest by design</p>
-          <h2 id="honest-title" className="title">No magic <em>match scores.</em></h2>
-        </div>
-        <dl className="honest-list">
-          <div><dt>Skills are self-declared.</dt><dd>Students rate themselves from 1 to 5 against plain-language descriptions. MESH shows the rating; it never pretends to have verified it.</dd></div>
-          <div><dt>Coverage is strict.</dt><dd>Two beginners don’t add up to one expert. A requirement is covered only when one person meets the level.</dd></div>
-          <div><dt>Every suggestion is explained.</dt><dd>Team combinations list the exact requirements each person covers and what stays open — no opaque percentages.</dd></div>
-        </dl>
-      </section>
+        <section className="mesh-principle mesh-section" aria-labelledby="mesh-principle-title">
+          <div className="mesh-section-label"><span>03</span> How MESH thinks</div>
+          <div className="mesh-principle-grid">
+            <h2 id="mesh-principle-title">A better team starts<br />with <em>clarity.</em></h2>
+            <div className="mesh-principle-copy">
+              <p>Skills are self-declared. A requirement is covered when one member meets its level. Team suggestions explain who covers what and what is still open.</p>
+              <p>No opaque match score. Just useful information to help you decide who to build with.</p>
+            </div>
+          </div>
+          <div className="mesh-principle-words" aria-hidden="true"><span>IDEA</span><span>SKILLS</span><span>PEOPLE</span><span>BUILD</span></div>
+        </section>
 
-      <section className="closing">
-        <div className="wrap closing-inner">
-          <h2 className="display">What are you <em>building?</em></h2>
-          <Link to={signedIn ? '/new' : '/register'} className="btn btn-signal btn-lg">Start with an idea <ArrowUpRight /></Link>
-        </div>
-      </section>
-
-      <footer className="wrap landing-foot meta">
-        <span>MESH — from ideas to teams</span>
-        <span>B.Tech mini-project</span>
+        <section className="mesh-finale" aria-labelledby="mesh-finale-title">
+          <div className="mesh-finale-image" aria-hidden="true" />
+          <div className="mesh-finale-inner">
+            <div className="mesh-section-label"><span>04</span> Your move</div>
+            <h2 id="mesh-finale-title">What will you<br /><em>build next?</em></h2>
+            <Link to={startPath} className="mesh-finale-action">Start with an idea <ArrowRight aria-hidden="true" /></Link>
+          </div>
+        </section>
+      </main>
+      <footer className="mesh-landing-footer">
+        <Wordmark />
+        <span>Ideas become real together.</span>
+        <span>© {new Date().getFullYear()} MESH</span>
       </footer>
     </div>
-  );
-}
-
-/** Illustrative example only; it is labelled as such and contains no live data. */
-function ExampleBlueprint() {
-  return (
-    <figure className="example sheet graph-paper" aria-label="Example: how an idea becomes a blueprint">
-      <figcaption className="row spread">
-        <span className="meta">Example blueprint</span>
-        <span className="tag">Draft</span>
-      </figcaption>
-      <p className="example-idea">
-        “An autonomous drone that <mark style={{ '--d': 0 } as React.CSSProperties}>navigates campus</mark> using{' '}
-        <mark style={{ '--d': 1 } as React.CSSProperties}>computer vision</mark>, with <mark style={{ '--d': 2 } as React.CSSProperties}>custom flight electronics</mark>.”
-      </p>
-      <ul className="example-reqs">
-        <ExampleReq d={0} name="Python" level={3} status="covered" note="You · Strong" />
-        <ExampleReq d={1} name="Machine Learning" level={3} status="partial" note="Team has level 2" />
-        <ExampleReq d={2} name="Embedded systems" level={3} status="open" note="Open — nobody yet" />
-      </ul>
-      <div className="example-team">
-        <span className="meta">Team · 2 of 4</span>
-        <div className="avatars">
-          <span className="avatar" style={{ '--hue': 24 } as React.CSSProperties}>YO</span>
-          <span className="avatar" style={{ '--hue': 160 } as React.CSSProperties}>RK</span>
-          <span className="avatar open">+</span>
-          <span className="avatar open">+</span>
-        </div>
-      </div>
-    </figure>
-  );
-}
-
-function ExampleReq({ name, level, status, note, d }: { name: string; level: number; status: 'covered' | 'partial' | 'open'; note: string; d: number }) {
-  return (
-    <li className={`example-req is-${status}`} style={{ '--d': d } as React.CSSProperties}>
-      <span className="heading" style={{ fontSize: 15 }}>{name}</span>
-      <Meter value={level} tone={status === 'open' ? undefined : status} />
-      <span className={`tag ${status === 'covered' ? 'tag-covered' : status === 'partial' ? 'tag-partial' : 'tag-signal'}`}>{note}</span>
-    </li>
   );
 }
