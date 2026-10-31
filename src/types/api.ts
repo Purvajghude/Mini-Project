@@ -197,6 +197,8 @@ export interface PollSlot {
   day: string; // e.g., 'Monday', 'Tuesday'
   timeRange: string; // e.g., '14:00 - 16:00'
   votes: string[]; // userIds who are available
+  voteCount?: number;
+  votedByMe?: boolean;
 }
 
 export interface AvailabilityPoll {
@@ -242,6 +244,41 @@ export interface Project {
   availabilityPolls: AvailabilityPoll[];
   githubRepoUrl?: string;
   createdAt: string;
+}
+
+export interface ProjectRequirementInput {
+  skillId: number;
+  minimumProficiency: number;
+  importance: 'REQUIRED' | 'PREFERRED';
+  note?: string | null;
+}
+
+export interface ProjectRequirement extends ProjectRequirementInput { skillName: string; }
+export interface ReplaceProjectRequirements {
+  targetTeamSize: number;
+  lifecycle: 'DRAFT' | 'RECRUITING' | 'ACTIVE' | 'ARCHIVED';
+  requirements: ProjectRequirementInput[];
+}
+export interface ProjectRequirements {
+  projectId: string;
+  lifecycle: 'DRAFT' | 'RECRUITING' | 'ACTIVE' | 'ARCHIVED';
+  targetTeamSize: number;
+  requirements: ProjectRequirement[];
+}
+export interface BlueprintSuggestionRequest {
+  idea: string;
+  domain?: string | null;
+  skillIds?: number[];
+  targetTeamSize?: number;
+}
+export interface BlueprintSuggestion {
+  source: 'DETERMINISTIC_TEMPLATE';
+  title: string;
+  summary: string;
+  domain: string | null;
+  targetTeamSize: number;
+  requirements: ProjectRequirement[];
+  assumptions: string[];
 }
 
 export interface PrivacySettings {

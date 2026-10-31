@@ -52,6 +52,7 @@ import { ProjectsView } from './views/ProjectsView';
 import { SettingsView } from './views/SettingsView';
 import { WelcomeView } from './views/WelcomeView';
 import { ResourcesView } from './views/ResourcesView';
+import { HomeWorkbenchView } from './views/HomeWorkbenchView';
 import { MaterialSymbol } from './components/m3';
 import Landing from './pages/Landing.jsx';
 
@@ -73,7 +74,7 @@ export default function App() {
   const [route, setRoute] = useState<string>(() => {
     try {
       const stored = sessionStorage.getItem('mesh-auth');
-      return stored ? 'discover' : 'landing';
+      return stored ? 'home' : 'landing';
     } catch {
       return 'landing';
     }
@@ -99,6 +100,7 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [discordGateCandidate, setDiscordGateCandidate] = useState<CandidateRecommendation | null>(null);
   const [discordGateInput, setDiscordGateInput] = useState('');
+  const [projectWizardActive, setProjectWizardActive] = useState(false);
 
   const toast = (msg: string) => {
     setNotice(msg);
@@ -575,6 +577,16 @@ export default function App() {
 
   const destinations: NavDestination[] = [
     {
+      id: 'home',
+      label: 'Studio',
+      icon: <Sparkles size={22} />,
+    },
+    {
+      id: 'projects',
+      label: 'Projects',
+      icon: <FolderGit2 size={22} />,
+    },
+    {
       id: 'discover',
       label: 'Discover',
       icon: <Compass size={22} />,
@@ -586,19 +598,9 @@ export default function App() {
       badgeCount: unreadMessagesCount + pendingRequestsCount,
     },
     {
-      id: 'projects',
-      label: 'Projects',
-      icon: <FolderGit2 size={22} />,
-    },
-    {
       id: 'resources',
       label: 'Resources',
       icon: <BookOpen size={22} />,
-    },
-    {
-      id: 'build-guides',
-      label: 'Build guides',
-      icon: <Sparkles size={22} />,
     },
     {
       id: 'profile',
@@ -724,6 +726,18 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Button
+              variant="filled"
+              size="sm"
+              icon={<Sparkles size={16} />}
+              onClick={() => {
+                setRoute('projects');
+                setProjectWizardActive(true);
+              }}
+            >
+              Start a Project
+            </Button>
+
             <span
               style={{
                 display: 'inline-flex',
@@ -773,6 +787,26 @@ export default function App() {
             overflowY: 'auto',
           }}
         >
+          {route === 'home' && user && (
+            <HomeWorkbenchView
+              currentUser={user}
+              projects={projects}
+              availableSkills={skills}
+              onOpenProject={(projId) => {
+                setRoute('projects');
+                setProjectWizardActive(false);
+              }}
+              onStartBlueprint={(req) => {
+                setRoute('projects');
+                setProjectWizardActive(true);
+              }}
+              onExploreProjects={() => {
+                setRoute('projects');
+                setProjectWizardActive(false);
+              }}
+              onToast={toast}
+            />
+          )}
           {route === 'profile' && user && (
             <ProfileView
               user={user}
@@ -835,6 +869,14 @@ export default function App() {
             <ProjectsView
               currentUser={user}
               projects={projects}
+              availableSkills={skills}
+              isWizardActive={projectWizardActive}
+              onOpenWizard={() => setProjectWizardActive(true)}
+              onCloseWizard={() => setProjectWizardActive(false)}
+              onProjectCreatedSuccess={(newProj) => {
+                setProjects((prev) => [newProj, ...prev]);
+                setProjectWizardActive(false);
+              }}
               onCreateProject={handleCreateProject}
               onCreateTask={handleCreateTask}
               onUpdateTask={handleUpdateTask}
