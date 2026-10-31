@@ -24,11 +24,19 @@ import {
   Project,
   ProjectEvent,
   ProjectTask,
+  Skill,
 } from '../types/api';
+import { ProjectCreationWizard } from '../components/project-creation';
+import { api } from '../api';
 
 interface ProjectsViewProps {
   currentUser: Profile;
   projects: Project[];
+  availableSkills?: Skill[];
+  isWizardActive?: boolean;
+  onOpenWizard?: () => void;
+  onCloseWizard?: () => void;
+  onProjectCreatedSuccess?: (newProject: Project) => void;
   onCreateProject: (project: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
   onCreateTask: (projectId: string, task: Omit<ProjectTask, 'id'>) => Promise<void>;
   onUpdateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => Promise<void>;
@@ -51,6 +59,11 @@ const CATEGORIES = [
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   currentUser,
   projects,
+  availableSkills = [],
+  isWizardActive = false,
+  onOpenWizard,
+  onCloseWizard,
+  onProjectCreatedSuccess,
   onCreateProject,
   onCreateTask,
   onUpdateTask,
@@ -62,9 +75,22 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   busy = false,
 }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [internalWizardOpen, setInternalWizardOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [workspaceTab, setWorkspaceTab] = useState<'tasks' | 'calendar' | 'polls'>('tasks');
+  const [workspaceTab, setWorkspaceTab] = useState<'requirements' | 'tasks' | 'calendar' | 'polls'>('requirements');
+  const [projectRequirements, setProjectRequirements] = useState<import('../types/api').ProjectRequirements | null>(null);
+  const [loadingRequirements, setLoadingRequirements] = useState(false);
+
+  const wizardOpen = isWizardActive || internalWizardOpen;
+  const handleOpenWizard = () => {
+    if (onOpenWizard) onOpenWizard();
+    else setInternalWizardOpen(true);
+  };
+  const handleCloseWizard = () => {
+    if (onCloseWizard) onCloseWizard();
+    else setInternalWizardOpen(false);
+  };
 
   // Modal dialog states
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
@@ -100,6 +126,33 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [newPollDescription, setNewPollDescription] = useState('');
 
   const currentProject = projects.find((p) => p.id === selectedProjectId) || null;
+
+  // Fetch verified backend requirements whenever a project is selected
+  React.useEffect(() => {
+    let active = true;
+    if (selectedProjectId) {
+      setLoadingRequirements(true);
+      api.getProjectRequirements(selectedProjectId)
+        .then((reqs) => {
+          if (active) {
+            setProjectRequirements(reqs);
+            setLoadingRequirements(false);
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            setProjectRequirements(null);
+            setLoadingRequirements(false);
+            console.warn('Could not load project requirements:', err);
+          }
+        });
+    } else {
+      setProjectRequirements(null);
+    }
+    return () => {
+      active = false;
+    };
+  }, [selectedProjectId]);
 
   // Filtered projects
   const filteredProjects = projects.filter((p) => {
@@ -282,13 +335,15 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             </h1>
           </div>
 
-          <Button
-            variant="filled"
-            icon={<Plus size={16} />}
-            onClick={() => setIsNewProjectOpen(true)}
-          >
-            Create New Project
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Button
+              variant="filled"
+              icon={<Plus size={16} />}
+              onClick={handleOpenWizard}
+            >
+              Start a Project
+            </Button>
+          </div>
         </div>
       ) : (
         /* WORKSPACE HEADER & BREADCRUMB */
@@ -413,6 +468,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           {/* Workspace Sub-tabs */}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Chip
+              selected={workspaceTab === 'requirements'}
+              onClick={() => setWorkspaceTab('requirements')}
+              icon={<Sparkles size={14} />}
+            >
+              Blueprint &amp; Requirements
+            </Chip>
+            <Chip
               selected={workspaceTab === 'tasks'}
               onClick={() => setWorkspaceTab('tasks')}
               icon={<Kanban size={14} />}
@@ -438,7 +500,54 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       )}
 
       {/* VIEW BODY */}
-      {!currentProject ? (
+      {wizardOpen ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              borderRadius: 'var(--md-sys-shape-corner-medium)',
+              backgroundColor: 'var(--md-sys-color-surface-container)',
+              border: '1px solid var(--md-sys-color-outline-variant)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--md-sys-color-on-surface)' }}>
+                Creating New Project Blueprint
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseWizard}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--md-sys-color-primary)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Back to Project Directory
+            </button>
+          </div>
+
+          <ProjectCreationWizard
+            availableSkills={availableSkills}
+            onProjectCreated={(newProject) => {
+              handleCloseWizard();
+              if (onProjectCreatedSuccess) {
+                onProjectCreatedSuccess(newProject);
+              }
+              setSelectedProjectId(newProject.id);
+            }}
+            onCancel={handleCloseWizard}
+            onToast={onToast}
+          />
+        </div>
+      ) : !currentProject ? (
         /* EXPLORER LISTING */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Category Chips and Search */}
@@ -581,6 +690,199 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       ) : (
         /* WORKSPACE DETAIL VIEWS */
         <div>
+          {workspaceTab === 'requirements' && (
+            /* BLUEPRINT & REQUIREMENTS VIEW */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 750, color: 'var(--md-sys-color-on-surface)' }}>
+                    Project Blueprint &amp; Skill Competencies
+                  </h2>
+                  <p style={{ margin: '4px 0 0 0', fontSize: 13, color: 'var(--md-sys-color-on-surface-variant)' }}>
+                    Authoritative technical requirements stored on the backend.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Button
+                    variant="tonal"
+                    size="sm"
+                    icon={<Sparkles size={14} />}
+                    onClick={() => {
+                      if (selectedProjectId) {
+                        setLoadingRequirements(true);
+                        api.getProjectRequirements(selectedProjectId)
+                          .then((res) => {
+                            setProjectRequirements(res);
+                            onToast('Requirements reloaded from server.');
+                          })
+                          .catch((err) => onToast(err.message || 'Could not reload requirements.'))
+                          .finally(() => setLoadingRequirements(false));
+                      }
+                    }}
+                    disabled={loadingRequirements}
+                  >
+                    {loadingRequirements ? 'Reloading...' : 'Reload from Server'}
+                  </Button>
+                </div>
+              </div>
+
+              {loadingRequirements ? (
+                <Card
+                  variant="outlined"
+                  style={{
+                    padding: 32,
+                    textAlign: 'center',
+                    backgroundColor: 'var(--md-sys-color-surface-container-low)',
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--md-sys-color-on-surface-variant)' }}>
+                    Fetching authoritative project requirements from API...
+                  </p>
+                </Card>
+              ) : !projectRequirements ? (
+                <Card
+                  variant="outlined"
+                  style={{
+                    padding: 32,
+                    textAlign: 'center',
+                    backgroundColor: 'var(--md-sys-color-surface-container-low)',
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--md-sys-color-on-surface-variant)' }}>
+                    No technical requirements configured yet for this project workspace.
+                  </p>
+                </Card>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Status Banner */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      padding: '14px 20px',
+                      borderRadius: 'var(--md-sys-shape-corner-medium)',
+                      backgroundColor: 'var(--md-sys-color-surface-container-low)',
+                      border: '1px solid var(--md-sys-color-outline-variant)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 750,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          padding: '3px 10px',
+                          borderRadius: 'var(--md-sys-shape-corner-full)',
+                          backgroundColor:
+                            projectRequirements.lifecycle === 'RECRUITING'
+                              ? 'var(--md-custom-color-synergy-container)'
+                              : 'var(--md-sys-color-secondary-container)',
+                          color:
+                            projectRequirements.lifecycle === 'RECRUITING'
+                              ? 'var(--md-custom-color-on-synergy-container)'
+                              : 'var(--md-sys-color-on-secondary-container)',
+                        }}
+                      >
+                        Lifecycle: {projectRequirements.lifecycle}
+                      </span>
+
+                      <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--md-sys-color-on-surface)' }}>
+                        Target Team Size: {projectRequirements.targetTeamSize} members
+                      </span>
+                    </div>
+
+                    <span style={{ fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)' }}>
+                      Total Requirements: {projectRequirements.requirements.length}
+                    </span>
+                  </div>
+
+                  {/* Requirements Grid */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                      gap: 14,
+                    }}
+                  >
+                    {projectRequirements.requirements.map((req) => {
+                      const isReq = req.importance === 'REQUIRED';
+                      return (
+                        <div
+                          key={req.skillId}
+                          style={{
+                            padding: '16px',
+                            borderRadius: 'var(--md-sys-shape-corner-medium)',
+                            backgroundColor: isReq
+                              ? 'var(--md-sys-color-surface-container-high)'
+                              : 'var(--md-sys-color-surface-container)',
+                            border: `1px solid ${
+                              isReq
+                                ? 'var(--md-sys-color-primary)'
+                                : 'var(--md-sys-color-outline-variant)'
+                            }`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 10,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 14, fontWeight: 750, color: 'var(--md-sys-color-on-surface)' }}>
+                              {req.skillName}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 750,
+                                textTransform: 'uppercase',
+                                padding: '2px 8px',
+                                borderRadius: 'var(--md-sys-shape-corner-full)',
+                                backgroundColor: isReq
+                                  ? 'var(--md-sys-color-primary-container)'
+                                  : 'var(--md-sys-color-secondary-container)',
+                                color: isReq
+                                  ? 'var(--md-sys-color-on-primary-container)'
+                                  : 'var(--md-sys-color-on-secondary-container)',
+                              }}
+                            >
+                              {req.importance}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: 11, color: 'var(--md-sys-color-on-surface-variant)', fontWeight: 600 }}>
+                              Minimum Proficiency:
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 750,
+                                color: 'var(--md-sys-color-primary)',
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              Level {req.minimumProficiency} / 5
+                            </span>
+                          </div>
+
+                          {req.note && (
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--md-sys-color-on-surface-variant)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                              &ldquo;{req.note}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {workspaceTab === 'tasks' && (
             /* KANBAN BOARD */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -610,7 +912,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   [
                     { id: 'TODO', label: 'To Do', color: 'var(--md-sys-color-surface-container)' },
                     { id: 'IN_PROGRESS', label: 'In Progress', color: 'var(--md-sys-color-secondary-container)' },
-                    { id: 'IN_REVIEW', label: 'In Review', color: '#FFF8E1' },
                     { id: 'DONE', label: 'Done', color: 'var(--md-custom-color-synergy-container)' },
                   ] as const
                 ).map((col) => {
@@ -688,7 +989,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                             >
                               <option value="TODO">To Do</option>
                               <option value="IN_PROGRESS">In Progress</option>
-                              <option value="IN_REVIEW">In Review</option>
                               <option value="DONE">Done</option>
                             </select>
                           </div>
@@ -873,7 +1173,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 </Card>
               ) : (
                 currentProject.availabilityPolls.map((poll) => {
-                  const maxVotes = Math.max(...poll.slots.map((s) => s.votes.length), 1);
+                  const maxVotes = Math.max(...poll.slots.map((s) => s.voteCount ?? s.votes.length), 1);
 
                   return (
                     <Card
@@ -900,8 +1200,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                       {/* Slots Matrix */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {poll.slots.map((slot) => {
-                          const hasVoted = slot.votes.includes(currentUser.id);
-                          const isTopConsensus = slot.votes.length === maxVotes && slot.votes.length > 0;
+                          const hasVoted = slot.votedByMe ?? slot.votes.includes(currentUser.id);
+                          const isTopConsensus = (slot.voteCount ?? slot.votes.length) === maxVotes && maxVotes > 0;
 
                           return (
                             <div
@@ -964,7 +1264,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                                     })}
                                   </div>
                                   <span style={{ fontSize: 12, fontWeight: 700, minWidth: 50 }}>
-                                    {slot.votes.length} {slot.votes.length === 1 ? 'vote' : 'votes'}
+                                    {slot.voteCount ?? slot.votes.length} {(slot.voteCount ?? slot.votes.length) === 1 ? 'vote' : 'votes'}
                                   </span>
                                 </div>
 

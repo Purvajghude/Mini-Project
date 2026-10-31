@@ -1,5 +1,5 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
-import { LogOut, PencilLine, Users } from 'lucide-react';
+import { LayoutGrid, LogOut, PencilLine, Users } from 'lucide-react';
 import { AuthProvider, useAuth, useMe } from './lib/auth';
 import { Link, match, navigate, useLocation } from './lib/router';
 import { api } from './lib/api';
@@ -129,6 +129,10 @@ function AppShell({ children }: { children: ReactNode }) {
       <main className="page" key={path.split('/').slice(0, 3).join('/')}>
         <div className="page-enter">{children}</div>
       </main>
+      <nav className="tabbar show-sm" aria-label="Main">
+        <Link to="/studio" aria-current={current('/studio') ?? (path.startsWith('/p/') || path === '/new' ? 'page' : undefined)}><LayoutGrid />Studio</Link>
+        <Link to="/people" aria-current={current('/people')}><Users />People{pending > 0 && <span className="badge-count" aria-label={`${pending} pending`}>{pending}</span>}</Link>
+      </nav>
     </>
   );
 }

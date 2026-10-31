@@ -35,6 +35,9 @@ export const api: ApiClient = {
   sendMessage: (matchId, content) => currentAdapter.sendMessage(matchId, content),
 
   getProjects: () => currentAdapter.getProjects(),
+  suggestProjectBlueprint: (input) => currentAdapter.suggestProjectBlueprint(input),
+  getProjectRequirements: (id) => currentAdapter.getProjectRequirements(id),
+  replaceProjectRequirements: (id, input) => currentAdapter.replaceProjectRequirements(id, input),
   getProject: (id) => currentAdapter.getProject(id),
   createProject: (project) => currentAdapter.createProject(project),
   createProjectTask: (id, task) => currentAdapter.createProjectTask(id, task),

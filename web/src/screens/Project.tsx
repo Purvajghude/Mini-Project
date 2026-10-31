@@ -51,8 +51,8 @@ function Workspace({ project, tab, setProject }: { project: Project; tab: string
     <div className={`workspace ${tab === 'board' ? 'is-board' : ''}`}>
       <header className="wrap ws-head">
         <div className="ws-title">
-          <p className="meta">{domainLabel(project.domain) || 'Project'} · {isOwner ? 'You own this' : 'Member'}</p>
           <h1 className="title">{project.name}</h1>
+          <p className="small muted" style={{ marginTop: 6 }}>{domainLabel(project.domain) || 'Project'} · {isOwner ? 'You own this' : 'Member'}</p>
         </div>
         <div className="ws-meta">
           <ol className="stages" aria-label="Project stage">

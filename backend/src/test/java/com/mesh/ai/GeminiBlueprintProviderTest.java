@@ -95,17 +95,21 @@ class GeminiBlueprintProviderTest {
     @Test void controller_falls_back_to_template_and_labels_it_honestly() throws Exception {
         var repo = catalogue();
         var failing = new GeminiBlueprintProvider("", "m", Duration.ofSeconds(1), repo, (u, k, b, t) -> envelope(VALID));
-        var controller = new AiBlueprintController(failing, new BlueprintController(repo));
+        var controller = new AiBlueprintController(failing, new BlueprintController(repo), repo);
         var response = controller.suggest(new BlueprintController.Request("Machine learning study planner", null, null, null));
         assertEquals("DETERMINISTIC_TEMPLATE", response.source());
         assertEquals("GEMINI_API_KEY is not configured.", response.fallbackReason());
         assertTrue(response.unmappedSkills().isEmpty());
 
+        Skill created = skill(99, "Embedded Systems");
+        when(repo.findOrCreate(anyString(), anyString())).thenReturn(created);
         var working = new GeminiBlueprintProvider("k", "m", Duration.ofSeconds(1), repo, (u, k, b, t) -> envelope(VALID));
-        var ai = new AiBlueprintController(working, new BlueprintController(repo)).suggest(new BlueprintController.Request("Drone", null, null, (short) 3));
+        var ai = new AiBlueprintController(working, new BlueprintController(repo), repo).suggest(new BlueprintController.Request("Drone", null, null, (short) 3));
         assertEquals("GEMINI", ai.source());
         assertNull(ai.fallbackReason());
         assertEquals(3, ai.targetTeamSize(), "an explicit team size from the student wins");
+        assertTrue(ai.unmappedSkills().isEmpty(), "skills outside the catalogue are added to it, not left unmapped");
+        assertTrue(ai.requirements().stream().anyMatch(r -> r.skillId() == 99L));
     }
 
     /** Opt-in live check against the real Gemini API; runs only when GEMINI_API_KEY is set. */

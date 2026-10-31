@@ -23,6 +23,7 @@ import {
   GitHubConnectionStatus,
   OAuthAuthorizationUrl,
   ProjectDiscordRoom,
+  BlueprintSuggestion, BlueprintSuggestionRequest, ProjectRequirements, ProjectRequirementInput,
 } from '../types/api';
 import { ApiClient, ApiError } from './client';
 import { CURATED_RESOURCES } from '../data/resourcesData';
@@ -47,11 +48,32 @@ function toProject(item: any): Project {
     slug: String(item.name || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     description: item.summary || 'A MESH project workspace.',
     category: item.domain || 'Student collaboration',
-    status: 'ACTIVE',
+    status: item.lifecycle === 'DRAFT' ? 'PLANNING' : item.lifecycle === 'ARCHIVED' ? 'COMPLETED' : 'ACTIVE',
     lead: { id: item.ownerUserId, displayName: item.members?.find((member: any) => member.userId === item.ownerUserId)?.displayName || 'Project owner', username: item.members?.find((member: any) => member.userId === item.ownerUserId)?.username || 'owner' },
     members: (item.members || []).map((member: any) => ({ id: member.userId, displayName: member.displayName, username: member.username, role: member.role, avatarKey: member.avatarKey })),
     openRoles: [], tags: item.domain ? [item.domain] : [], tasks: [], events: [], availabilityPolls: [], createdAt: item.createdAt,
   };
+}
+
+function toTask(item: any, project: Project): ProjectTask {
+  const member = project.members.find((m) => m.id === item.assigneeUserId);
+  return { id: item.id, title: item.title, description: item.description || '', status: item.status,
+    priority: 'MEDIUM', assignee: member ? { id: member.id, displayName: member.displayName, avatarKey: member.avatarKey } : undefined,
+    dueDate: item.dueDate || undefined, tags: [] };
+}
+
+function toEvent(item: any): import('../types/api').ProjectEvent {
+  return { id: item.id, title: item.title, description: item.description || '', startDate: item.startsAt,
+    endDate: item.endsAt, type: 'MEETING' };
+}
+
+function toPoll(item: any): AvailabilityPoll {
+  return { id: item.id, title: item.title, description: '', status: item.status === 'OPEN' ? 'OPEN' : 'RESOLVED',
+    slots: (item.options || []).map((option: any) => ({ id: option.id,
+      day: new Date(option.startsAt).toLocaleDateString([], { weekday: 'long' }),
+      timeRange: `${new Date(option.startsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${new Date(option.endsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
+      votes: [], voteCount: option.voteCount, votedByMe: option.votedByMe })),
+    voterCount: (item.options || []).reduce((total: number, option: any) => total + option.voteCount, 0) };
 }
 
 export class HttpApiAdapter implements ApiClient {
@@ -181,11 +203,33 @@ export class HttpApiAdapter implements ApiClient {
 
   async getProjects(): Promise<Project[]> {
     const results = await this.request<any[]>('/projects');
-    return results.map(toProject);
+    return Promise.all(results.map((item) => this.hydrateProject(item)));
+  }
+
+  async suggestProjectBlueprint(input: BlueprintSuggestionRequest): Promise<BlueprintSuggestion> {
+    return this.request<BlueprintSuggestion>('/project-blueprints/suggestions', { method: 'POST', body: input });
+  }
+
+  async getProjectRequirements(projectId: string): Promise<ProjectRequirements> {
+    return this.request<ProjectRequirements>(`/projects/${projectId}/requirements`);
+  }
+
+  async replaceProjectRequirements(projectId: string, input: { targetTeamSize: number; lifecycle: ProjectRequirements['lifecycle']; requirements: ProjectRequirementInput[] }): Promise<ProjectRequirements> {
+    return this.request<ProjectRequirements>(`/projects/${projectId}/requirements`, { method: 'PUT', body: input });
   }
 
   async getProject(projectId: string): Promise<Project | null> {
-    return toProject(await this.request<any>(`/projects/${projectId}`));
+    return this.hydrateProject(await this.request<any>(`/projects/${projectId}`));
+  }
+
+  private async hydrateProject(item: any): Promise<Project> {
+    const project = toProject(item);
+    const [tasks, events, polls] = await Promise.all([
+      this.request<any[]>(`/projects/${item.id}/tasks`),
+      this.request<any[]>(`/projects/${item.id}/events`),
+      this.request<any[]>(`/projects/${item.id}/availability-polls`),
+    ]);
+    return { ...project, tasks: tasks.map((task) => toTask(task, project)), events: events.map(toEvent), availabilityPolls: polls.map(toPoll) };
   }
 
   async createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
@@ -193,26 +237,51 @@ export class HttpApiAdapter implements ApiClient {
   }
 
   async createProjectTask(projectId: string, task: Omit<ProjectTask, 'id'>): Promise<ProjectTask> {
-    return this.request<ProjectTask>(`/projects/${projectId}/tasks`, { method: 'POST', body: task });
+    const project = await this.getProject(projectId);
+    const created = await this.request<any>(`/projects/${projectId}/tasks`, { method: 'POST', body: {
+      title: task.title, description: task.description, assigneeUserId: task.assignee?.id || null, dueDate: task.dueDate || null,
+    } });
+    return toTask(created, project!);
   }
 
   async updateProjectTask(projectId: string, taskId: string, updates: Partial<ProjectTask>): Promise<ProjectTask> {
-    return this.request<ProjectTask>(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH', body: updates });
+    const project = await this.getProject(projectId);
+    const current = project?.tasks.find((task) => task.id === taskId);
+    if (!current) throw new ApiError('Task was not found.', 404);
+    const next = { ...current, ...updates };
+    const updated = await this.request<any>(`/projects/${projectId}/tasks/${taskId}`, { method: 'PUT', body: {
+      title: next.title, description: next.description, status: next.status,
+      assigneeUserId: next.assignee?.id || null, dueDate: next.dueDate || null,
+    } });
+    return toTask(updated, project!);
   }
 
   async createProjectEvent(projectId: string, event: Omit<import('../types/api').ProjectEvent, 'id'>): Promise<import('../types/api').ProjectEvent> {
-    return this.request<import('../types/api').ProjectEvent>(`/projects/${projectId}/events`, { method: 'POST', body: event });
+    return toEvent(await this.request<any>(`/projects/${projectId}/events`, { method: 'POST', body: {
+      title: event.title, description: event.description, startsAt: new Date(event.startDate).toISOString(),
+      endsAt: new Date(new Date(event.endDate).getTime() > new Date(event.startDate).getTime() ? event.endDate : new Date(new Date(event.startDate).getTime() + 3600000)).toISOString(),
+    } }));
   }
 
   async votePollSlot(projectId: string, pollId: string, slotId: string): Promise<AvailabilityPoll> {
-    return this.request<AvailabilityPoll>(`/projects/${projectId}/polls/${pollId}/vote`, {
-      method: 'POST',
-      body: { slotId },
-    });
+    await this.request<void>(`/projects/${projectId}/availability-polls/${pollId}/options/${slotId}/vote`, { method: 'PUT' });
+    const polls = await this.request<any[]>(`/projects/${projectId}/availability-polls`);
+    return toPoll(polls.find((poll) => poll.id === pollId));
   }
 
   async createAvailabilityPoll(projectId: string, poll: Omit<AvailabilityPoll, 'id' | 'voterCount'>): Promise<AvailabilityPoll> {
-    return this.request<AvailabilityPoll>(`/projects/${projectId}/polls`, { method: 'POST', body: poll });
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const now = new Date();
+    const options = poll.slots.map((slot) => {
+      const offset = (days.indexOf(slot.day) - now.getDay() + 7) % 7 || 7;
+      const [start, end] = slot.timeRange.split(' - ');
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      const [sh, sm] = start.split(':').map(Number); const [eh, em] = end.split(':').map(Number);
+      const startsAt = new Date(date); startsAt.setHours(sh, sm, 0, 0);
+      const endsAt = new Date(date); endsAt.setHours(eh, em, 0, 0);
+      return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+    });
+    return toPoll(await this.request<any>(`/projects/${projectId}/availability-polls`, { method: 'POST', body: { title: poll.title, options } }));
   }
 
   async getPrivacySettings(): Promise<PrivacySettings> {

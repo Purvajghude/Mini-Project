@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: MESH API
-  version: 0.3.0
+  version: 0.4.0
   license: { name: UNLICENSED, identifier: LicenseRef-UNLICENSED }
   description: |
     Contract for the MESH student-collaboration modular monolith. This milestone exposes account,
@@ -13,6 +13,89 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /project-blueprints/suggestions:
+    post:
+      operationId: suggestProjectBlueprint
+      summary: Suggest an editable deterministic blueprint without persisting it
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BlueprintSuggestionRequest' } } }
+      responses:
+        '200': { description: Editable suggestion, content: { application/json: { schema: { $ref: '#/components/schemas/BlueprintSuggestion' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /project-blueprints/ai-suggestions:
+    post:
+      operationId: suggestAiProjectBlueprint
+      summary: Suggest an editable Gemini blueprint with an explicit deterministic fallback
+      description: Uses the same request as deterministic suggestions. No project or requirements are persisted.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BlueprintSuggestionRequest' } } }
+      responses:
+        '200': { description: Gemini or labelled deterministic fallback suggestion, content: { application/json: { schema: { $ref: '#/components/schemas/AiBlueprintSuggestion' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /projects/{projectId}/requirements:
+    get:
+      operationId: getProjectRequirements
+      summary: Read project requirements as a member
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      responses:
+        '200': { description: Project requirements, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectRequirements' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: replaceProjectRequirements
+      summary: Replace editable requirements and advance project lifecycle as owner
+      description: |
+        Lifecycle transitions are DRAFT to RECRUITING to ACTIVE to ARCHIVED; the current
+        state may be retained. RECRUITING and ACTIVE require at least one valid requirement.
+        Target team size includes the owner and cannot be below current membership.
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ReplaceProjectRequirements' } } }
+      responses:
+        '200': { description: Saved requirements, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectRequirements' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /projects/{projectId}/skill-gap-analysis:
+    get:
+      operationId: getProjectSkillGapAnalysis
+      summary: Analyze declared skill coverage across all current project members
+      description: Requires project membership and saved requirements. Proficiency is self-declared; multiple lower ratings never combine to satisfy a threshold.
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      responses:
+        '200': { description: Deterministic project skill gap analysis, content: { application/json: { schema: { $ref: '#/components/schemas/SkillGapAnalysis' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /projects/{projectId}/team-suggestions:
+    post:
+      operationId: suggestProjectTeams
+      summary: Return up to three deterministic complementary team alternatives
+      description: |
+        Owner only while DRAFT or RECRUITING. Candidates must be active, onboarded,
+        login-capable students; members and blocked users are excluded. The target size
+        includes existing members. Suggestions use self-declared proficiency and never
+        create membership or invitations. Unknown availability is visible to the owner.
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TeamSuggestionRequest' } } }
+      responses:
+        '200': { description: Deterministic team alternatives, content: { application/json: { schema: { $ref: '#/components/schemas/TeamSuggestionSet' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /actuator/health:
     get:
       operationId: healthCheck
@@ -451,6 +534,15 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
   /projects/{projectId}/members:
+    get:
+      operationId: listProjectMembers
+      summary: List confirmed members; project members only
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      responses:
+        '200': { description: Confirmed members, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProjectMember' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
       operationId: addProjectMember
       summary: Add one of the owner's established connections to a project
@@ -461,6 +553,71 @@ paths:
       responses:
         '200': { description: Project with the added member, content: { application/json: { schema: { $ref: '#/components/schemas/Project' } } } }
         '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /projects/{projectId}/invitations:
+    post:
+      operationId: sendProjectInvitation
+      summary: Invite an eligible student without requiring a personal connection
+      description: Owner only; project must be RECRUITING. Pending invitations reserve team capacity.
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SendProjectInvitationRequest' } } }
+      responses:
+        '201': { description: Pending invitation, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectInvitation' } } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      operationId: listProjectInvitations
+      summary: List invitations for a project; owner only
+      parameters: [ { $ref: '#/components/parameters/ProjectId' } ]
+      responses:
+        '200': { description: Invitations, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProjectInvitation' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /projects/{projectId}/invitations/{invitationId}:
+    delete:
+      operationId: cancelProjectInvitation
+      summary: Cancel a pending project invitation; owner only
+      parameters: [ { $ref: '#/components/parameters/ProjectId' }, { $ref: '#/components/parameters/InvitationId' } ]
+      responses:
+        '200': { description: Cancelled invitation, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectInvitation' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /project-invitations/incoming:
+    get:
+      operationId: listIncomingProjectInvitations
+      summary: List pending invitations addressed to the signed-in student
+      responses:
+        '200': { description: Pending invitations, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProjectInvitation' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /project-invitations/{invitationId}/accept:
+    patch:
+      operationId: acceptProjectInvitation
+      summary: Accept an invitation and atomically join the project
+      parameters: [ { $ref: '#/components/parameters/InvitationId' } ]
+      responses:
+        '200': { description: Accepted invitation, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectInvitation' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /project-invitations/{invitationId}/decline:
+    patch:
+      operationId: declineProjectInvitation
+      summary: Decline a pending invitation addressed to the signed-in student
+      parameters: [ { $ref: '#/components/parameters/InvitationId' } ]
+      responses:
+        '200': { description: Declined invitation, content: { application/json: { schema: { $ref: '#/components/schemas/ProjectInvitation' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -718,6 +875,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     UserId:
       name: userId
       in: path
@@ -749,6 +911,137 @@ components:
       required: true
       schema: { type: string, format: uuid }
   schemas:
+    BlueprintSuggestionRequest:
+      type: object
+      required: [idea]
+      properties:
+        idea: { type: string, minLength: 1, maxLength: 2000 }
+        domain: { type: [string, 'null'], maxLength: 80 }
+        skillIds: { type: array, maxItems: 30, items: { type: integer, format: int64 } }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+    BlueprintSuggestion:
+      type: object
+      required: [source, title, summary, targetTeamSize, requirements, assumptions]
+      properties:
+        source: { type: string, enum: [DETERMINISTIC_TEMPLATE] }
+        title: { type: string }
+        summary: { type: string }
+        domain: { type: [string, 'null'] }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+        requirements: { type: array, items: { $ref: '#/components/schemas/ProjectRequirement' } }
+        assumptions: { type: array, items: { type: string } }
+    AiBlueprintSuggestion:
+      type: object
+      required: [source, title, summary, targetTeamSize, requirements, assumptions, objectives, unmappedSkills]
+      properties:
+        source: { type: string, enum: [GEMINI, DETERMINISTIC_TEMPLATE] }
+        title: { type: string }
+        summary: { type: string }
+        domain: { type: [string, 'null'] }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+        requirements: { type: array, items: { $ref: '#/components/schemas/ProjectRequirement' } }
+        assumptions: { type: array, items: { type: string } }
+        objectives: { type: array, items: { type: string } }
+        unmappedSkills:
+          type: array
+          items:
+            type: object
+            required: [name, importance]
+            properties:
+              name: { type: string }
+              importance: { type: string, enum: [REQUIRED, PREFERRED] }
+              reason: { type: [string, 'null'] }
+        fallbackReason: { type: [string, 'null'], description: Present when the deterministic fallback was used. }
+    ProjectRequirementInput:
+      type: object
+      required: [skillId, minimumProficiency, importance]
+      properties:
+        skillId: { type: integer, format: int64 }
+        minimumProficiency: { type: integer, minimum: 1, maximum: 5 }
+        importance: { type: string, enum: [REQUIRED, PREFERRED] }
+        note: { type: [string, 'null'], maxLength: 300 }
+    ProjectRequirement:
+      allOf:
+        - $ref: '#/components/schemas/ProjectRequirementInput'
+        - type: object
+          required: [skillName]
+          properties:
+            skillName: { type: string }
+    ReplaceProjectRequirements:
+      type: object
+      required: [targetTeamSize, lifecycle, requirements]
+      properties:
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+        lifecycle: { type: string, enum: [DRAFT, RECRUITING, ACTIVE, ARCHIVED] }
+        requirements: { type: array, maxItems: 30, items: { $ref: '#/components/schemas/ProjectRequirementInput' } }
+    ProjectRequirements:
+      type: object
+      required: [projectId, lifecycle, targetTeamSize, requirements]
+      properties:
+        projectId: { type: string, format: uuid }
+        lifecycle: { type: string, enum: [DRAFT, RECRUITING, ACTIVE, ARCHIVED] }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+        requirements: { type: array, items: { $ref: '#/components/schemas/ProjectRequirement' } }
+    SkillGap:
+      type: object
+      required: [skillId, skillName, requiredProficiency, importance, coverageStatus, satisfyingMemberIds]
+      properties:
+        skillId: { type: integer, format: int64 }
+        skillName: { type: string }
+        requiredProficiency: { type: integer, minimum: 1, maximum: 5 }
+        importance: { type: string, enum: [REQUIRED, PREFERRED] }
+        coverageStatus: { type: string, enum: [COVERED, PARTIAL, UNCOVERED] }
+        satisfyingMemberIds: { type: array, items: { type: string, format: uuid } }
+    SkillGapAnalysis:
+      type: object
+      required: [projectId, lifecycle, targetTeamSize, currentMemberCount, remainingCapacity, required, preferred]
+      properties:
+        projectId: { type: string, format: uuid }
+        lifecycle: { type: string, enum: [DRAFT, RECRUITING, ACTIVE, ARCHIVED] }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8, description: Includes the owner. }
+        currentMemberCount: { type: integer, minimum: 1 }
+        remainingCapacity: { type: integer, minimum: 0 }
+        required: { type: array, items: { $ref: '#/components/schemas/SkillGap' } }
+        preferred: { type: array, items: { $ref: '#/components/schemas/SkillGap' } }
+    TeamSuggestionRequest:
+      type: object
+      properties:
+        alternativeCount: { type: integer, minimum: 1, maximum: 3, default: 3 }
+        excludeCandidateIds: { type: array, maxItems: 80, uniqueItems: true, items: { type: string, format: uuid } }
+        availabilityPolicy: { type: string, enum: [ALLOW_UNKNOWN, REQUIRE_OVERLAP], default: ALLOW_UNKNOWN }
+    TeamCandidateReason:
+      type: object
+      required: [userId, displayName, covers, partialCovers, learningFit, availabilityStatus, evidenceSupport, explanation]
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+        covers: { type: array, items: { type: integer, format: int64 }, description: Requirement skill IDs where this student's declared proficiency meets the threshold. }
+        partialCovers: { type: array, items: { type: integer, format: int64 }, description: Declared skills below the threshold. }
+        learningFit: { type: array, items: { type: integer, format: int64 }, description: Desired skills that do not count toward coverage. }
+        availabilityStatus: { type: string, enum: [COMPATIBLE, UNKNOWN, INCOMPATIBLE] }
+        evidenceSupport: { type: boolean, description: GitHub language support for an already declared covered skill; not proof of expertise. }
+        explanation: { type: string }
+    TeamAlternative:
+      type: object
+      required: [candidates, coveredRequiredSkillIds, uncoveredRequiredSkillIds, coveredPreferredSkillIds, seatsUnfilled, explanation]
+      properties:
+        candidates: { type: array, items: { $ref: '#/components/schemas/TeamCandidateReason' } }
+        coveredRequiredSkillIds: { type: array, items: { type: integer, format: int64 } }
+        uncoveredRequiredSkillIds: { type: array, items: { type: integer, format: int64 } }
+        coveredPreferredSkillIds: { type: array, items: { type: integer, format: int64 } }
+        seatsUnfilled: { type: integer, minimum: 0 }
+        explanation: { type: string }
+    TeamSuggestionSet:
+      type: object
+      required: [projectId, targetTeamSize, currentMemberCount, remainingCapacity, gapAnalysis, alternatives, explanation]
+      properties:
+        projectId: { type: string, format: uuid }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8 }
+        currentMemberCount: { type: integer, minimum: 1 }
+        remainingCapacity: { type: integer, minimum: 0 }
+        gapAnalysis: { $ref: '#/components/schemas/SkillGapAnalysis' }
+        alternatives: { type: array, maxItems: 3, items: { $ref: '#/components/schemas/TeamAlternative' } }
+        explanation: { type: string }
     HealthStatus:
       type: object
       required: [status]
@@ -1023,7 +1316,7 @@ components:
         newOwnerUserId: { type: string, format: uuid }
     Project:
       type: object
-      required: [id, name, ownerUserId, createdAt, members]
+      required: [id, name, ownerUserId, createdAt, members, lifecycle, targetTeamSize]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -1032,6 +1325,8 @@ components:
         ownerUserId: { type: string, format: uuid }
         createdAt: { type: string, format: date-time }
         members: { type: array, items: { $ref: '#/components/schemas/ProjectMember' } }
+        lifecycle: { type: string, enum: [DRAFT, RECRUITING, ACTIVE, ARCHIVED] }
+        targetTeamSize: { type: integer, minimum: 1, maximum: 8, description: Includes the owner. }
     ProjectMember:
       type: object
       required: [userId, username, displayName, role]
@@ -1041,6 +1336,24 @@ components:
         displayName: { type: string }
         avatarKey: { type: [string, 'null'] }
         role: { type: string, enum: [OWNER, MEMBER] }
+    SendProjectInvitationRequest:
+      type: object
+      required: [inviteeUserId]
+      properties:
+        inviteeUserId: { type: string, format: uuid }
+    ProjectInvitation:
+      type: object
+      required: [id, projectId, projectName, inviterUserId, inviterName, inviteeUserId, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        projectName: { type: string }
+        inviterUserId: { type: string, format: uuid }
+        inviterName: { type: string }
+        inviteeUserId: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, ACCEPTED, DECLINED, CANCELLED] }
+        createdAt: { type: string, format: date-time }
+        respondedAt: { type: [string, 'null'], format: date-time }
     SendProjectMessageRequest:
       type: object
       required: [content]

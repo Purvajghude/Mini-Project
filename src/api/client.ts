@@ -23,6 +23,7 @@ import {
   GitHubConnectionStatus,
   OAuthAuthorizationUrl,
   ProjectDiscordRoom,
+  BlueprintSuggestion, BlueprintSuggestionRequest, ProjectRequirements, ProjectRequirementInput,
 } from '../types/api';
 
 export class ApiError extends Error {
@@ -61,6 +62,9 @@ export interface ApiClient {
   sendMessage(matchId: string, content: string): Promise<ChatMessage>;
 
   getProjects(): Promise<Project[]>;
+  suggestProjectBlueprint(request: BlueprintSuggestionRequest): Promise<BlueprintSuggestion>;
+  getProjectRequirements(projectId: string): Promise<ProjectRequirements>;
+  replaceProjectRequirements(projectId: string, input: { targetTeamSize: number; lifecycle: ProjectRequirements['lifecycle']; requirements: ProjectRequirementInput[] }): Promise<ProjectRequirements>;
   getProject(projectId: string): Promise<Project | null>;
   createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
   createProjectTask(projectId: string, task: Omit<ProjectTask, 'id'>): Promise<ProjectTask>;

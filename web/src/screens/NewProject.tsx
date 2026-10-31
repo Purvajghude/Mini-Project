@@ -36,8 +36,8 @@ async function generate(idea: string): Promise<Generated> {
 
 function composeBrief(s: AiBlueprintSuggestion) {
   const parts = [s.summary.trim()];
-  if (s.objectives.length) parts.push(`Objectives:\n${s.objectives.map((o) => `- ${o}`).join('\n')}`);
-  if (s.assumptions.length) parts.push(`Assumptions:\n${s.assumptions.map((a) => `- ${a}`).join('\n')}`);
+  if (s.objectives.length) parts.push(`Deliverables:\n${s.objectives.map((o) => `- ${o}`).join('\n')}`);
+  if (s.assumptions.length) parts.push(`Scope:\n${s.assumptions.map((a) => `- ${a}`).join('\n')}`);
   return parts.join('\n\n');
 }
 
@@ -57,6 +57,7 @@ export function NewProject() {
       .then((g) => {
         if (!live) return;
         setGen(g);
+        catalogue.reload(); // Gemini may have added new skills to the catalogue
         setDraft({
           name: g.suggestion.title.slice(0, 120),
           brief: composeBrief(g.suggestion).slice(0, 1000),
@@ -99,7 +100,6 @@ function IdeaEntry({ idea, setIdea, failure, onSubmit }: { idea: string; setIdea
   return (
     <div className="wrap idea">
       <form className="idea-form" onSubmit={submit}>
-        <p className="meta">New project</p>
         <label htmlFor="idea" className="display idea-q">What do you want to <em>build?</em></label>
         <ErrorNote error={failure} />
         <div className="idea-surface">

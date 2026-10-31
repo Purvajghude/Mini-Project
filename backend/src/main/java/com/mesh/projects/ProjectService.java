@@ -34,6 +34,8 @@ public class ProjectService {
     public List<ProjectResponse> list(UUID userId) { return members.findByUserIdOrderByJoinedAtDesc(userId).stream().map(member -> response(access.requireProject(member.getProjectId()))).toList(); }
     @Transactional(readOnly = true)
     public ProjectResponse get(UUID userId, UUID projectId) { access.requireMember(projectId, userId); return response(access.requireProject(projectId)); }
+    @Transactional(readOnly = true)
+    public List<MemberResponse> members(UUID userId, UUID projectId) { return get(userId, projectId).members(); }
     @Transactional
     public ProjectResponse update(UUID ownerId, UUID projectId, UpdateProjectRequest request) {
         access.requireOwner(projectId, ownerId);
@@ -78,12 +80,12 @@ public class ProjectService {
             StudentProfile profile = requireProfile(member.getUserId());
             return new MemberResponse(profile.getUserId(), profile.getUsername(), profile.getDisplayName(), profile.getAvatarKey(), member.getRole().name());
         }).toList();
-        return new ProjectResponse(project.getId(), project.getName(), project.getSummary(), project.getDomain(), project.getOwnerUserId(), project.getCreatedAt(), memberResponses);
+        return new ProjectResponse(project.getId(), project.getName(), project.getSummary(), project.getDomain(), project.getOwnerUserId(), project.getCreatedAt(), memberResponses, project.getLifecycle(), project.getTargetTeamSize());
     }
     private StudentProfile requireProfile(UUID userId) { return profiles.findById(userId).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Student profile was not found.")); }
     private String nullable(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     public record CreateProjectRequest(String name, String summary, String domain) { }
     public record UpdateProjectRequest(String name, String summary, String domain) { }
-    public record ProjectResponse(UUID id, String name, String summary, String domain, UUID ownerUserId, Instant createdAt, List<MemberResponse> members) { }
+    public record ProjectResponse(UUID id, String name, String summary, String domain, UUID ownerUserId, Instant createdAt, List<MemberResponse> members, String lifecycle, short targetTeamSize) { }
     public record MemberResponse(UUID userId, String username, String displayName, String avatarKey, String role) { }
 }

@@ -104,7 +104,12 @@ export function Skeleton({ h = 16, w = '100%' }: { h?: number; w?: number | stri
 }
 
 export function Loading({ label = 'Loading' }: { label?: string }) {
-  return <div className="row muted small" role="status" style={{ padding: '24px 0' }}><span className="spinner" />{label}…</div>;
+  return (
+    <div className="loading" role="status">
+      <div className="loading-lines" aria-hidden="true"><span /><span /><span /><span /></div>
+      <span className="meta">{label}…</span>
+    </div>
+  );
 }
 
 export function Dialog({ open, onClose, children, label }: { open: boolean; onClose(): void; children: ReactNode; label: string }) {

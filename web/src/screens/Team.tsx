@@ -74,10 +74,10 @@ function GapSummary({ gap, project }: { gap: SkillGapAnalysis; project: Project 
     <section className="gap">
       <div className="gap-head">
         <div>
-          <p className="meta">Skill gap · from declared skills of all {gap.currentMemberCount} member{gap.currentMemberCount === 1 ? '' : 's'}</p>
           <h2 className="title">
             {count(gap.required, 'COVERED')} of {gap.required.length} must-haves <em>covered.</em>
           </h2>
+          <p className="small muted" style={{ marginTop: 8 }}>From the declared skills of all {gap.currentMemberCount} member{gap.currentMemberCount === 1 ? '' : 's'}.</p>
         </div>
         <dl className="gap-stats">
           <div><dt className="meta">Open</dt><dd>{count(gap.required, 'UNCOVERED') + count(gap.preferred, 'UNCOVERED')}</dd></div>
@@ -143,7 +143,6 @@ function Suggestions({ project, invitations, setInvitations }: { project: Projec
     <section className="suggest">
       <div className="suggest-head">
         <div>
-          <p className="meta">Team formation</p>
           <h2 className="title">Who could fill the <em>gaps?</em></h2>
           <p className="muted" style={{ maxWidth: 560 }}>MESH searches onboarded students and returns up to three combinations. Each is explained requirement by requirement — there are no match scores.</p>
         </div>

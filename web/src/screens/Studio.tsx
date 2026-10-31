@@ -29,7 +29,6 @@ export function Studio() {
   return (
     <div className="wrap studio">
       <form className="studio-idea" onSubmit={start}>
-        <p className="meta">Studio · {me.displayName}</p>
         <label htmlFor="studio-idea" className="display">What are you <em>building?</em></label>
         <div className="idea-surface">
           <textarea id="studio-idea" className="idea-input" rows={3} value={idea} onChange={(e) => setIdea(e.target.value)} maxLength={2000}

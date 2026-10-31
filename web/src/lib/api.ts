@@ -77,6 +77,8 @@ export const api = {
   replaceAvailability: (timezone: string, windows: T.AvailabilityWindow[]) => request<T.Profile>('/profile/me/availability', 'PUT', { timezone, windows }),
 
   skills: () => request<T.Skill[]>('/skills'),
+  /** Adds a skill MESH doesn't list yet, or returns the existing one with that name. */
+  createSkill: (name: string) => request<T.Skill>('/skills', 'POST', { name }),
   goals: () => request<T.Goal[]>('/goals'),
   interests: () => request<T.Interest[]>('/interests'),
   domains: () => request<T.Domain[]>('/domains'),

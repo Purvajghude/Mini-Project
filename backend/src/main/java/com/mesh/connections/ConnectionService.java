@@ -48,9 +48,10 @@ public class ConnectionService {
         if (connectionExists(senderId, recipientId)) throw new ApiException(HttpStatus.CONFLICT, "You are already connected.");
         ConnectionRequest opposite = requests.findBySenderUserIdAndRecipientUserId(recipientId, senderId).orElse(null);
         if (opposite != null && opposite.getStatus() == ConnectionRequest.Status.PENDING) throw new ApiException(HttpStatus.CONFLICT, "This student has already sent you a request. Accept it from your incoming requests.");
-        ConnectionRequest request = requests.findBySenderUserIdAndRecipientUserId(senderId, recipientId).orElseGet(() -> new ConnectionRequest(senderId, recipientId));
-        if (request.getStatus() == ConnectionRequest.Status.PENDING) throw new ApiException(HttpStatus.CONFLICT, "A connection request is already pending.");
-        if (request.getStatus() != ConnectionRequest.Status.PENDING) request.reopen();
+        ConnectionRequest request = requests.findBySenderUserIdAndRecipientUserId(senderId, recipientId).orElse(null);
+        if (request != null && request.getStatus() == ConnectionRequest.Status.PENDING) throw new ApiException(HttpStatus.CONFLICT, "A connection request is already pending.");
+        if (request == null) request = new ConnectionRequest(senderId, recipientId);
+        else request.reopen();
         requests.save(request);
         return requestResponse(request);
     }

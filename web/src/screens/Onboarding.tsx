@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import { useAuth, useMe } from '../lib/auth';
 import { useLoad } from '../lib/hooks';
@@ -64,12 +64,33 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
   const [failure, setFailure] = useState<ApiError | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [added, setAdded] = useState<Skill[]>([]);
+  const [query, setQuery] = useState('');
+  const [adding, setAdding] = useState(false);
+  const allSkills = useMemo(() => [...cat.skills, ...added], [cat.skills, added]);
+  const q = query.trim().toLowerCase();
   const byCategory = useMemo(() => {
     const m = new Map<string, Skill[]>();
-    for (const s of cat.skills) m.set(s.category, [...(m.get(s.category) ?? []), s]);
-    return [...m.entries()];
-  }, [cat.skills]);
-  const selected = cat.skills.filter((s) => levels.has(s.id));
+    for (const s of allSkills) if (!q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)) m.set(s.category, [...(m.get(s.category) ?? []), s]);
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [allSkills, q]);
+  const selected = allSkills.filter((s) => levels.has(s.id));
+  const exact = allSkills.some((s) => s.name.toLowerCase() === q);
+
+  async function addSkill() {
+    setAdding(true);
+    setFailure(null);
+    try {
+      const skill = await api.createSkill(query.trim());
+      if (!allSkills.some((s) => s.id === skill.id)) setAdded((a) => [...a, skill]);
+      setLevels((m) => new Map(m).set(skill.id, 3));
+      setQuery('');
+    } catch (err) {
+      setFailure(err as ApiError);
+    } finally {
+      setAdding(false);
+    }
+  }
 
   const toggle = <T,>(set: Set<T>, v: T, max: number) => {
     const next = new Set(set);
@@ -145,7 +166,7 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
       <section className="onboard-step" key={step} aria-live="polite">
         {step === 0 && (
           <>
-            <Question kicker={`Hi ${firstName}.`} q="What are you studying?" />
+            <Question q="What are you studying?" />
             <div className="onboard-grid">
               <Field label="Department or branch" hint="For example, Computer Science or Electronics">
                 {(id) => <input id={id} className="input" value={department} onChange={(e) => setDepartment(e.target.value)} maxLength={120} autoFocus />}
@@ -169,7 +190,23 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
 
         {step === 1 && (
           <>
-            <Question kicker="The useful part." q="Which technical skills do you have?" sub="Choose what you’ve actually used. You’ll rate each one next." />
+            <Question q="What can you do?" sub="Any skill counts: code, cooking, painting, lab work, first aid. Can’t find one? Type it and add it." />
+            <div className="skill-search">
+              <input className="input" type="search" placeholder="Search any skill: cooking, soldering, titration…" value={query} maxLength={60}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && q && !exact) { e.preventDefault(); void addSkill(); } }} />
+              {q && !exact && <Button type="button" variant="ghost" loading={adding} onClick={() => void addSkill()}><Plus />Add “{query.trim()}”</Button>}
+            </div>
+            {selected.length > 0 && (
+              <div className="skill-group">
+                <span className="meta">Your skills · {selected.length}</span>
+                <div className="row" style={{ '--gap': '6px' } as React.CSSProperties}>
+                  {selected.map((s) => (
+                    <button key={s.id} type="button" className="chip" aria-pressed onClick={() => setLevels((m) => { const n = new Map(m); n.delete(s.id); return n; })}><Check />{s.name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="skill-groups">
               {byCategory.map(([category, skills]) => (
                 <div key={category} className="skill-group">
@@ -190,7 +227,7 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
 
         {step === 2 && (
           <>
-            <Question kicker="Be honest — it helps your team." q="How confident are you in each?" sub="Teammates see this as your own rating. Nobody expects five everywhere." />
+            <Question q="How confident are you in each?" sub="Teammates see this as your own rating. Nobody expects five everywhere." />
             <ul className="confidence">
               {selected.map((s) => {
                 const v = levels.get(s.id)!;
@@ -208,7 +245,7 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
 
         {step === 3 && (
           <>
-            <Question kicker="Almost there." q="What kinds of projects interest you?" />
+            <Question q="What kinds of projects interest you?" />
             <div className="field">
               <span className="label">Themes <span className="muted">· up to 12</span></span>
               <div className="row" style={{ '--gap': '6px' } as React.CSSProperties}>
@@ -226,7 +263,7 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
 
         {step === 4 && (
           <>
-            <Question kicker="Last one." q="When are you usually free?" sub={`Tap the blocks that work most weeks. Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. You can skip this.`} />
+            <Question q="When are you usually free?" sub={`Tap the blocks that work most weeks. Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. You can skip this.`} />
             <div className="avail" role="grid" aria-label="Weekly availability">
               <span />
               {BLOCKS.map((b) => <span key={b.key} className="meta avail-head">{b.label}</span>)}
@@ -256,10 +293,9 @@ function Flow({ me, cat }: { me: Profile; cat: Catalogue }) {
   );
 }
 
-function Question({ kicker, q, sub }: { kicker: string; q: string; sub?: string }) {
+function Question({ q, sub }: { q: string; sub?: string }) {
   return (
     <div className="stack" style={{ '--gap': '8px' } as React.CSSProperties}>
-      <p className="meta">{kicker}</p>
       <h1 className="title">{q}</h1>
       {sub && <p className="muted">{sub}</p>}
     </div>

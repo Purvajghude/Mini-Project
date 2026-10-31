@@ -42,7 +42,6 @@ export function People() {
   return (
     <div className="wrap people">
       <div className="stack" style={{ '--gap': '8px' } as React.CSSProperties}>
-        <p className="meta">People</p>
         <h1 className="title">Your <em>collaborators.</em></h1>
         <p className="muted" style={{ maxWidth: 560 }}>When your declared skills fill a gap in someone’s project, they can invite you. Join, and the project opens in your studio with its tasks, schedule and board.</p>
       </div>

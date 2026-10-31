@@ -34,7 +34,7 @@ public class GeminiBlueprintProvider {
         public BlueprintGenerationException(String message) { super(message); }
     }
 
-    public record Unmapped(String name, Importance importance, String reason) { }
+    public record Unmapped(String name, Importance importance, String reason, short minimumProficiency, String category) { }
     public record Generated(String title, String summary, short targetTeamSize, List<RequirementResponse> requirements,
                             List<String> objectives, List<String> assumptions, List<Unmapped> unmappedSkills) { }
 
@@ -105,28 +105,30 @@ public class GeminiBlueprintProvider {
         StringBuilder skillList = new StringBuilder();
         byCategory.forEach((category, names) -> skillList.append("\n  ").append(category).append(": ").append(String.join(", ", names)));
         String prompt = """
-            A university engineering student described a project idea. Produce a concise technical blueprint
-            that helps them recruit teammates.
+            A university student described a project idea. It can be from any field: engineering, cooking,
+            art, music, chemistry lab work, medicine, business, sport, social work. List the skills a team
+            needs to build it, so the student can find teammates who have them.
 
             Idea: %s
             Area hint: %s
             Team size hint (including the student): %s
 
-            MESH skill catalogue: %s
+            Existing MESH skills: %s
 
             Rules:
-            - title: a short project name (max 8 words), not a restatement of the idea.
-            - summary: 2-3 plain sentences on what will be built and why.
-            - objectives: 3-5 concrete, verifiable technical objectives.
-            - assumptions: 1-4 important technical assumptions or scope limits.
-            - requirements: the engineering capabilities the project genuinely needs (3-8).
-              Use the exact catalogue name when a catalogue skill fits. If an essential capability is not
-              in the catalogue (for example embedded systems), name it plainly instead; do not force a poor match.
-              importance REQUIRED only when the project cannot succeed without it.
-              minimumProficiency 1-5 (1 aware, 3 has built something real, 5 expert); prefer 2-4 for student projects.
-              reason: one sentence on why the project needs it.
+            - Be blunt and concrete. No intros, no filler, no marketing words, no "This project aims to".
+            - title: a short project name (max 6 words).
+            - summary: ONE sentence, max 20 words: what gets built.
+            - objectives: 3-5 deliverables, each max 8 words, starting with a verb ("Wire motors to the ESCs").
+            - assumptions: 0-2 items, each max 10 words. Empty if nothing important.
+            - requirements: every distinct skill the work needs (4-10). A skill is something a person can
+              learn and claim, named in 1-3 words ("Soldering", "Embedded C", "Knife Skills", "Titration").
+              Use the exact existing name when one fits; otherwise name the skill plainly.
+              category: one word or two for the field, e.g. Electronics, Software, Cooking, Art, Lab, Medical.
+              importance REQUIRED only when the project fails without it.
+              minimumProficiency 1-5 (1 aware, 3 has done it for real, 5 expert); usually 2-3 for students.
+              reason: max 12 words on what this skill does in the project.
             - targetTeamSize: 2-6 people including the student.
-            Write for students; avoid buzzwords and marketing language.
             """.formatted(idea, domain == null ? "none" : domain, teamSizeHint == null ? "none" : teamSizeHint, skillList);
 
         ObjectNode root = JSON.createObjectNode();
@@ -149,7 +151,7 @@ public class GeminiBlueprintProvider {
                   "targetTeamSize":{"type":"INTEGER"},
                   "requirements":{"type":"ARRAY","items":{"type":"OBJECT",
                     "required":["skill","importance","minimumProficiency","reason"],
-                    "properties":{"skill":{"type":"STRING"},"importance":{"type":"STRING","enum":["REQUIRED","PREFERRED"]},
+                    "properties":{"skill":{"type":"STRING"},"category":{"type":"STRING"},"importance":{"type":"STRING","enum":["REQUIRED","PREFERRED"]},
                       "minimumProficiency":{"type":"INTEGER"},"reason":{"type":"STRING"}}}}}}
                 """);
         } catch (Exception e) {
@@ -191,7 +193,7 @@ public class GeminiBlueprintProvider {
             if (name.isEmpty() || importance == null || level < 1 || level > 5) continue; // drop malformed entries, keep the rest
             Skill skill = byName.get(normalize(name));
             if (skill == null) {
-                unmapped.putIfAbsent(normalize(name), new Unmapped(name, importance, reason.isEmpty() ? null : reason));
+                unmapped.putIfAbsent(normalize(name), new Unmapped(name, importance, reason.isEmpty() ? null : reason, (short) level, text(r, "category", 40)));
                 continue;
             }
             RequirementResponse existing = mapped.get(skill.getId());

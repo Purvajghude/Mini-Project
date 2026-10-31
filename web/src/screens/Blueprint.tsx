@@ -57,7 +57,6 @@ export function BlueprintEditor({ draft, onChange, skills, domains, errors = {},
     <div className="bp">
       <article className="bp-doc sheet">
         <div className="bp-doc-inner">
-          <p className="meta">Project blueprint</p>
           {readOnly ? <h1 className="bp-title">{draft.name}</h1> : (
             <textarea className="bp-title bp-edit" rows={1} aria-label="Project title" value={draft.name} maxLength={LIMITS.name}
               onChange={(e) => set('name', e.target.value.replace(/\n/g, ''))} aria-invalid={!!errors.name} placeholder="Working title" />

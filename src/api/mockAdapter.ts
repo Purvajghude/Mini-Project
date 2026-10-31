@@ -784,6 +784,9 @@ function getInitialDatabase(): MockDatabase {
 }
 
 export class MockApiAdapter implements ApiClient {
+  async suggestProjectBlueprint(): Promise<never> { throw new ApiError('Blueprint suggestions require the production API.', 501); }
+  async getProjectRequirements(): Promise<never> { throw new ApiError('Project requirements require the production API.', 501); }
+  async replaceProjectRequirements(): Promise<never> { throw new ApiError('Project requirements require the production API.', 501); }
   private db: MockDatabase;
   private token: string | null = 'mock-bearer-token-12345';
 
